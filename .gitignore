@@ -25,6 +25,7 @@ Thumbs.db
 .env.production.local
 .env*.local
 
+
 # Editor-specific files
 .vscode/
 .idea/
