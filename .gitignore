@@ -14,8 +14,7 @@ lerna-debug.log*
 # OS-specific files
 .DS_Store
 Thumbs.db
-
-
+desktop.ini
 
 # Environment variables
 .env
@@ -25,6 +24,19 @@ Thumbs.db
 .env.production.local
 .env*.local
 
+# Android specific
+/ruta-app-android/.gradle/
+/ruta-app-android/local.properties
+/ruta-app-android/.project
+/ruta-app-android/build/
+/ruta-app-android/.idea/
+/ruta-app-android/*.iml
+/ruta-app-android/.settings/
+/ruta-app-android/.cxx/
+/ruta-app-android/.externalNativeBuild/
+/ruta-app-android/captures/
+/ruta-app-android/google-services.json
+/ruta-app-android/app/build/
 
 # Editor-specific files
 .vscode/
@@ -34,3 +46,7 @@ Thumbs.db
 *.njsproj
 *.sln
 *.sw?
+
+# Temporary scripts
+update_role.js
+ruta-app-backend/update_role_script.js

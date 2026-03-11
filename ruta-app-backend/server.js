@@ -20,11 +20,27 @@ const initDb = async () => {
       telefono VARCHAR(20),
       correo VARCHAR(100) UNIQUE NOT NULL,
       password VARCHAR(255) NOT NULL,
-      foto TEXT
+      foto TEXT,
+      rol VARCHAR(50) DEFAULT 'usuario',
+      fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
   `;
   try {
     await db.query(createTableQuery);
+
+    // Migración para bases de datos existentes: Añadir columnas si no existen
+    const columns = await db.query("SELECT column_name FROM information_schema.columns WHERE table_name = 'usuarios'");
+    const columnNames = columns.rows.map(c => c.column_name);
+
+    if (!columnNames.includes('rol')) {
+      await db.query("ALTER TABLE usuarios ADD COLUMN rol VARCHAR(50) DEFAULT 'usuario'");
+      console.log('Columna "rol" añadida.');
+    }
+    if (!columnNames.includes('fecha_creacion')) {
+      await db.query("ALTER TABLE usuarios ADD COLUMN fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP");
+      console.log('Columna "fecha_creacion" añadida.');
+    }
+
     console.log('Tabla "usuarios" verificada/creada');
   } catch (err) {
     console.error('Error al inicializar la tabla:', err);
@@ -48,14 +64,14 @@ app.get('/usuarios', async (req, res) => {
 
 // Registrar un usuario
 app.post('/usuarios', async (req, res) => {
-  const { nombre, telefono, correo, password, foto } = req.body;
+  const { nombre, telefono, correo, password, foto, rol } = req.body;
   try {
     const hashedPassword = await bcrypt.hash(password, 10);
     const result = await db.query(
-      'INSERT INTO usuarios (nombre, telefono, correo, password, foto) VALUES ($1, $2, $3, $4, $5) RETURNING idUsuario',
-      [nombre, telefono, correo, hashedPassword, foto]
+      'INSERT INTO usuarios (nombre, telefono, correo, password, foto, rol) VALUES ($1, $2, $3, $4, $5, $6) RETURNING idusuario',
+      [nombre, telefono, correo, hashedPassword, foto, rol || 'usuario']
     );
-    res.status(201).json({ idUsuario: result.rows[0].idUsuario });
+    res.status(201).json({ idUsuario: result.rows[0].idusuario });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Error al crear usuario' });
@@ -79,9 +95,15 @@ app.post('/login', async (req, res) => {
       console.log('Password incorrecta');
       return res.status(401).json({ error: 'Contraseña incorrecta' });
     }
-    const token = jwt.sign({ id: user.idusuario }, process.env.JWT_SECRET, { expiresIn: '1h' });
+    const token = jwt.sign({ id: user.idusuario, rol: user.rol }, process.env.JWT_SECRET, { expiresIn: '1h' });
     console.log('Login exitoso');
-    res.json({ token, idUsuario: user.idusuario, nombre: user.nombre });
+    res.json({
+      token,
+      idUsuario: user.idusuario,
+      nombre: user.nombre,
+      rol: user.rol,
+      fechaCreacion: user.fecha_creacion
+    });
   } catch (err) {
     console.error('ERROR EN LOGIN:', err);
     res.status(500).json({ error: 'Error en el login', details: err.message });
@@ -91,11 +113,35 @@ app.post('/login', async (req, res) => {
 // Eliminar usuario
 app.delete('/usuarios/:id', async (req, res) => {
   try {
-    await db.query('DELETE FROM usuarios WHERE idUsuario = $1', [req.params.id]);
+    await db.query('DELETE FROM usuarios WHERE idusuario = $1', [req.params.id]);
     res.json({ message: 'Usuario eliminado' });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Error al eliminar usuario' });
+  }
+});
+
+// Actualizar usuario
+app.put('/usuarios/:id', async (req, res) => {
+  const { nombre, telefono, correo, password, foto } = req.body;
+  try {
+    let updateQuery = 'UPDATE usuarios SET nombre = $1, telefono = $2, correo = $3, foto = $4';
+    let params = [nombre, telefono, correo, foto];
+
+    if (password) {
+      const hashedPassword = await bcrypt.hash(password, 10);
+      updateQuery += ', password = $5 WHERE idusuario = $6';
+      params.push(hashedPassword, req.params.id);
+    } else {
+      updateQuery += ' WHERE idusuario = $5';
+      params.push(req.params.id);
+    }
+
+    await db.query(updateQuery, params);
+    res.json({ message: 'Usuario actualizado correctamente' });
+  } catch (err) {
+    console.error('ERROR EN UPDATE:', err);
+    res.status(500).json({ error: 'Error al actualizar usuario', details: err.message });
   }
 });
 
