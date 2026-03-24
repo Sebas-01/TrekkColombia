@@ -51,13 +51,22 @@ data class MessageResponse(
 )
 
 data class TrekkingRoute(
-    val id: Int,
-    val title: String,
-    val imageUrl: String,
-    val description: String,
-    val height: Int,
-    val companyName: String,
-    val difficulty: String,
-    val duration: String,
-    val guideName: String
+    @SerializedName("id") val id: Int,
+    @SerializedName("title") val title: String,
+    @SerializedName("imageurl") val imageUrl: String,
+    @SerializedName("description") val description: String,
+    @SerializedName("height") val height: Int,
+    @SerializedName("companyname") val companyName: String,
+    @SerializedName("difficulty") val difficulty: String,
+    @SerializedName("duration") val duration: String,
+    @SerializedName("guidename") val guideName: String,
+    @SerializedName("latitude") val latitude: Double = 0.0,
+    @SerializedName("longitude") val longitude: Double = 0.0,
+    @SerializedName("geojson") val geoJson: String? = null,
+    @SerializedName("isfavorite") val isFavorite: Boolean = false
+)
+
+data class FavoriteRequest(
+    val idUsuario: Int,
+    val idRuta: Int
 )

@@ -1,0 +1,21 @@
+# Gradle files
+.gradle/
+build/
+
+# Android Studio / IntelliJ files
+.idea/
+*.iml
+*.iws
+.project
+.settings/
+.classpath
+
+# Local configuration files
+local.properties
+
+# Kotlin files
+.kotlin/
+
+# OS files
+.DS_Store
+Thumbs.db

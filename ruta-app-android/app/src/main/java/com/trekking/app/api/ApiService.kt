@@ -18,4 +18,16 @@ interface ApiService {
 
     @DELETE("/usuarios/{id}")
     suspend fun deleteUsuario(@Path("id") id: Int): Response<MessageResponse>
+
+    @GET("/rutas")
+    suspend fun getRutas(@Query("idUsuario") idUsuario: Int?): Response<List<TrekkingRoute>>
+
+    @GET("/favoritos/{idUsuario}")
+    suspend fun getFavoritos(@Path("idUsuario") idUsuario: Int): Response<List<TrekkingRoute>>
+
+    @POST("/favoritos")
+    suspend fun addFavorito(@Body request: FavoriteRequest): Response<MessageResponse>
+
+    @DELETE("/favoritos/{idUsuario}/{idRuta}")
+    suspend fun removeFavorito(@Path("idUsuario") idUsuario: Int, @Path("idRuta") idRuta: Int): Response<MessageResponse>
 }

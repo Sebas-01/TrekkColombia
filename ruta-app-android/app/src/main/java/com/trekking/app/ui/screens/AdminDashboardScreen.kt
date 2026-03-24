@@ -29,6 +29,7 @@ fun AdminDashboardScreen(
     currentUser: Usuario?,
     onManageUsersClick: () -> Unit,
     onCreateUserClick: () -> Unit,
+    onManageRoutesClick: () -> Unit,
     onLogout: () -> Unit
 ) {
     Scaffold(
@@ -124,10 +125,10 @@ fun AdminDashboardScreen(
 
             MenuOption(
                 title = "Rutas de Trekking",
-                subtitle = "Proximamente...",
+                subtitle = "Ver y gestionar rutas en el mapa",
                 icon = Icons.Default.LocationOn,
-                onClick = {},
-                enabled = false
+                onClick = onManageRoutesClick,
+                enabled = true
             )
         }
     }
@@ -205,6 +206,7 @@ fun AdminDashboardPreview() {
             currentUser = null,
             onManageUsersClick = {},
             onCreateUserClick = {},
+            onManageRoutesClick = {},
             onLogout = {}
         )
     }

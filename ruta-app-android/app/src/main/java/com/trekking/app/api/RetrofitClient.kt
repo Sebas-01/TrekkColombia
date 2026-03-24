@@ -6,8 +6,8 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
 object RetrofitClient {
-    // 10.0.2.2 es la dirección IP especial para acceder al localhost de tu PC desde el emulador de Android
-    private const val BASE_URL = "http://10.0.2.2:3000"
+    // URL pública generada por ngrok para acceso desde dispositivo físico
+    private const val BASE_URL = "https://unfasciated-carolyn-puristically.ngrok-free.dev"
 
     val instance: ApiService by lazy {
         val logging = HttpLoggingInterceptor().apply {
