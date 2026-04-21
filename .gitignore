@@ -50,3 +50,8 @@ desktop.ini
 # Temporary scripts
 update_role.js
 ruta-app-backend/update_role_script.js
+
+
+.claude/
+.agents/
+.commandcode/

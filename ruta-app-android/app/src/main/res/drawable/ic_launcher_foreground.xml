@@ -1,0 +1,20 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Montañas -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M20,75 L45,35 L65,65 L80,45 L95,75 Z" />
+    <!-- Sol/Círculo -->
+    <path
+        android:fillColor="#FFC107"
+        android:pathData="M75,25 A8,8 0 1,1 75,41 A8,8 0 1,1 75,25" />
+    <!-- Línea de sendero -->
+    <path
+        android:strokeColor="#4CAF50"
+        android:strokeWidth="3"
+        android:strokeLineCap="round"
+        android:pathData="M20,85 Q50,70 90,85" />
+</vector>

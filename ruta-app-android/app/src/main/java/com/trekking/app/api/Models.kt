@@ -25,7 +25,10 @@ data class LoginResponse(
     val token: String,
     @SerializedName("idUsuario") val idUsuario: Int,
     val nombre: String,
-    @SerializedName("rol") val rol: String?, // Aseguramos que mapee 'rol'
+    val correo: String?,
+    val telefono: String?,
+    val foto: String?,
+    val rol: String?, // Aseguramos que mapee 'rol'
     @SerializedName("fechaCreacion") val fechaCreacion: String?
 )
 
@@ -50,13 +53,41 @@ data class MessageResponse(
     val message: String
 )
 
+data class Empresa(
+    val id: Int,
+    val nombre: String,
+    val identificacion: Long
+)
+
+data class Guia(
+    val id: Int,
+    val nombre: String,
+    val cedula: Long,
+    val telefono: String?,
+    val correo: String?,
+    val foto: String?,
+    @SerializedName("id_empresa") val idEmpresa: Int?,
+    @SerializedName("empresa_nombre") val empresaNombre: String?
+)
+
+data class GuiaRequest(
+    val nombre: String,
+    val cedula: Long,
+    val telefono: String?,
+    val correo: String?,
+    val foto: String?,
+    @SerializedName("id_empresa") val idEmpresa: Int?
+)
+
 data class TrekkingRoute(
     @SerializedName("id") val id: Int,
     @SerializedName("title") val title: String,
     @SerializedName("imageurl") val imageUrl: String,
     @SerializedName("description") val description: String,
     @SerializedName("height") val height: Int,
+    @SerializedName("id_empresa") val companyId: Int?,
     @SerializedName("companyname") val companyName: String,
+    @SerializedName("companyidentification") val companyIdentification: Long?,
     @SerializedName("difficulty") val difficulty: String,
     @SerializedName("duration") val duration: String,
     @SerializedName("guidename") val guideName: String,

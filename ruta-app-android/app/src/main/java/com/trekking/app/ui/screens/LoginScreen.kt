@@ -12,6 +12,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -39,7 +40,7 @@ fun LoginScreen(
     val scope = rememberCoroutineScope()
 
     Box(modifier = Modifier.fillMaxSize()) {
-        // Fondo con Imagen de Naturaleza (Estilo Pinterest/Moderno)
+        // Fondo con Imagen de Naturaleza (Nítido)
         AsyncImage(
             model = "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&q=80&w=1000",
             contentDescription = null,
@@ -88,13 +89,19 @@ fun LoginScreen(
 
             Spacer(modifier = Modifier.height(48.dp))
 
-            // Card de Login
-            Surface(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(32.dp),
-                color = Color.White.copy(alpha = 0.95f),
-                shadowElevation = 8.dp
-            ) {
+            // Contenedor con efecto Blur sin afectar el texto
+            Box(modifier = Modifier.fillMaxWidth()) {
+                // Capa de fondo con Blur (el "cristal")
+                Surface(
+                    modifier = Modifier
+                        .matchParentSize()
+                        .blur(25.dp),
+                    shape = RoundedCornerShape(32.dp),
+                    color = Color.White.copy(alpha = 0.2f),
+                    shadowElevation = 8.dp
+                ) {}
+
+                // Capa de contenido (Nítida)
                 Column(
                     modifier = Modifier.padding(28.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
@@ -106,7 +113,13 @@ fun LoginScreen(
                         leadingIcon = { Icon(Icons.Default.Email, contentDescription = null) },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(16.dp),
-                        singleLine = true
+                        singleLine = true,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedContainerColor = Color.White,
+                            unfocusedContainerColor = Color.White,
+                            focusedBorderColor = Color(0xFF192f6a),
+                            unfocusedBorderColor = Color.Gray.copy(alpha = 0.4f)
+                        )
                     )
                     
                     Spacer(modifier = Modifier.height(16.dp))
@@ -119,7 +132,13 @@ fun LoginScreen(
                         modifier = Modifier.fillMaxWidth(),
                         visualTransformation = PasswordVisualTransformation(),
                         shape = RoundedCornerShape(16.dp),
-                        singleLine = true
+                        singleLine = true,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedContainerColor = Color.White,
+                            unfocusedContainerColor = Color.White,
+                            focusedBorderColor = Color(0xFF192f6a),
+                            unfocusedBorderColor = Color.Gray.copy(alpha = 0.4f)
+                        )
                     )
 
                     Spacer(modifier = Modifier.height(32.dp))
@@ -138,9 +157,9 @@ fun LoginScreen(
                                                 Usuario(
                                                     idUsuario = loginRes.idUsuario,
                                                     nombre = loginRes.nombre,
-                                                    telefono = null,
-                                                    correo = email,
-                                                    foto = null,
+                                                    telefono = loginRes.telefono,
+                                                    correo = loginRes.correo ?: email,
+                                                    foto = loginRes.foto,
                                                     rol = loginRes.rol ?: "usuario",
                                                     fechaCreacion = loginRes.fechaCreacion
                                                 )

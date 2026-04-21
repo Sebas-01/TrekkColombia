@@ -12,6 +12,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -25,6 +26,7 @@ import com.trekking.app.api.RegisterRequest
 import com.trekking.app.api.RetrofitClient
 import com.trekking.app.ui.theme.TrekkingAppTheme
 import kotlinx.coroutines.launch
+import org.json.JSONObject
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Lock
@@ -46,7 +48,7 @@ fun RegisterScreen(
     val scope = rememberCoroutineScope()
 
     Box(modifier = Modifier.fillMaxSize()) {
-        // Fondo con Imagen de Naturaleza (Mismo estilo que Login)
+        // Fondo con Imagen de Naturaleza (Nítido)
         AsyncImage(
             model = "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&q=80&w=1000",
             contentDescription = null,
@@ -104,12 +106,19 @@ fun RegisterScreen(
             
             Spacer(modifier = Modifier.height(32.dp))
 
-            Surface(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(32.dp),
-                color = Color.White.copy(alpha = 0.95f),
-                shadowElevation = 8.dp
-            ) {
+            // Contenedor de Registro con efecto Blur sin afectar el texto
+            Box(modifier = Modifier.fillMaxWidth()) {
+                // Capa de fondo con Blur (el "cristal")
+                Surface(
+                    modifier = Modifier
+                        .matchParentSize()
+                        .blur(25.dp),
+                    shape = RoundedCornerShape(32.dp),
+                    color = Color.White.copy(alpha = 0.2f),
+                    shadowElevation = 8.dp
+                ) {}
+
+                // Capa de contenido (Nítida)
                 Column(modifier = Modifier.padding(28.dp)) {
                     OutlinedTextField(
                         value = nombre,
@@ -118,7 +127,13 @@ fun RegisterScreen(
                         leadingIcon = { Icon(Icons.Default.Person, contentDescription = null) },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(16.dp),
-                        singleLine = true
+                        singleLine = true,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedContainerColor = Color.White,
+                            unfocusedContainerColor = Color.White,
+                            focusedBorderColor = Color(0xFF192f6a),
+                            unfocusedBorderColor = Color.Gray.copy(alpha = 0.4f)
+                        )
                     )
                     
                     Spacer(modifier = Modifier.height(16.dp))
@@ -130,7 +145,13 @@ fun RegisterScreen(
                         leadingIcon = { Icon(Icons.Default.Email, contentDescription = null) },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(16.dp),
-                        singleLine = true
+                        singleLine = true,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedContainerColor = Color.White,
+                            unfocusedContainerColor = Color.White,
+                            focusedBorderColor = Color(0xFF192f6a),
+                            unfocusedBorderColor = Color.Gray.copy(alpha = 0.4f)
+                        )
                     )
                     
                     Spacer(modifier = Modifier.height(16.dp))
@@ -142,7 +163,13 @@ fun RegisterScreen(
                         leadingIcon = { Icon(Icons.Default.Phone, contentDescription = null) },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(16.dp),
-                        singleLine = true
+                        singleLine = true,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedContainerColor = Color.White,
+                            unfocusedContainerColor = Color.White,
+                            focusedBorderColor = Color(0xFF192f6a),
+                            unfocusedBorderColor = Color.Gray.copy(alpha = 0.4f)
+                        )
                     )
                     
                     Spacer(modifier = Modifier.height(16.dp))
@@ -155,7 +182,13 @@ fun RegisterScreen(
                         visualTransformation = PasswordVisualTransformation(),
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(16.dp),
-                        singleLine = true
+                        singleLine = true,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedContainerColor = Color.White,
+                            unfocusedContainerColor = Color.White,
+                            focusedBorderColor = Color(0xFF192f6a),
+                            unfocusedBorderColor = Color.Gray.copy(alpha = 0.4f)
+                        )
                     )
                     
                     Spacer(modifier = Modifier.height(32.dp))
@@ -163,6 +196,12 @@ fun RegisterScreen(
                     Button(
                         onClick = {
                             if (nombre.isNotBlank() && correo.isNotBlank() && password.isNotBlank()) {
+                                val emailPattern = "^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$".toRegex()
+                                if (!emailPattern.matches(correo)) {
+                                    errorMessage = "Correo electrónico inválido"
+                                    return@Button
+                                }
+
                                 scope.launch {
                                     isLoading = true
                                     errorMessage = null
@@ -179,7 +218,12 @@ fun RegisterScreen(
                                         if (response.isSuccessful) {
                                             onRegisterSuccess()
                                         } else {
-                                            errorMessage = "Error al registrar"
+                                            val body = response.errorBody()?.string()
+                                            errorMessage = try {
+                                                JSONObject(body ?: "").optString("error", "Error al registrar")
+                                            } catch (e: Exception) {
+                                                "Error al registrar (${response.code()})"
+                                            }
                                         }
                                     } catch (e: Exception) {
                                         Log.e("RegisterScreen", "Error", e)

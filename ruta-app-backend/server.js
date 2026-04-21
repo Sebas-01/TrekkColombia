@@ -11,6 +11,11 @@ const port = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
+// --- Archivos estáticos ---
+// Imágenes de rutas: GET /imagenes/nombre-archivo.jpg
+// Coordenadas GPX:   GET /rutas/nombre-ruta.gpx
+app.use(express.static('public'));
+
 // --- Inicialización de la Base de Datos ---
 const initDb = async () => {
   const createTablesQuery = `
@@ -27,19 +32,35 @@ const initDb = async () => {
       fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
 
+    CREATE TABLE IF NOT EXISTS empresas (
+      id SERIAL PRIMARY KEY,
+      nombre VARCHAR(255) NOT NULL,
+      identificacion BIGINT NOT NULL
+    );
+
     CREATE TABLE IF NOT EXISTS rutas (
       id SERIAL PRIMARY KEY,
       title VARCHAR(255) NOT NULL,
       imageUrl TEXT,
       description TEXT,
       height INTEGER,
-      companyName VARCHAR(255),
+      id_empresa INTEGER REFERENCES empresas(id),
       difficulty VARCHAR(50),
       duration VARCHAR(50),
       guideName VARCHAR(255),
       latitude DOUBLE PRECISION DEFAULT 0.0,
       longitude DOUBLE PRECISION DEFAULT 0.0,
       geom GEOMETRY(LineString, 4326)
+    );
+
+    CREATE TABLE IF NOT EXISTS guias (
+      id SERIAL PRIMARY KEY,
+      nombre VARCHAR(255) NOT NULL,
+      cedula BIGINT NOT NULL,
+      telefono VARCHAR(20),
+      correo VARCHAR(100),
+      foto TEXT,
+      id_empresa INTEGER REFERENCES empresas(id) ON DELETE SET NULL
     );
 
     CREATE TABLE IF NOT EXISTS favoritos (
@@ -64,29 +85,96 @@ const initDb = async () => {
       console.log('Columna "fecha_creacion" añadida.');
     }
 
-    // Columna geom en rutas (si no existe)
+    // --- Migración de Empresas ---
     const routesColumns = await db.query("SELECT column_name FROM information_schema.columns WHERE table_name = 'rutas'");
     const routesColumnNames = routesColumns.rows.map(c => c.column_name);
+
+    if (!routesColumnNames.includes('id_empresa')) {
+      await db.query("ALTER TABLE rutas ADD COLUMN id_empresa INTEGER REFERENCES empresas(id)");
+      console.log('Columna "id_empresa" añadida a rutas.');
+    }
+
+    if (routesColumnNames.includes('companyname')) {
+      // Migrar datos de companyName a la tabla empresas
+      console.log('Migrando nombres de empresas a la nueva tabla...');
+      const distinctCompanies = await db.query("SELECT DISTINCT companyName FROM rutas WHERE companyName IS NOT NULL AND companyName != ''");
+      
+      for (const row of distinctCompanies.rows) {
+        const companyName = row.companyname;
+        // Insertar empresa (usando un NIT ficticio basado en el nombre para la migración)
+        const dummyNit = Math.floor(Math.random() * 900000000) + 100000000;
+        const empResult = await db.query(
+          "INSERT INTO empresas (nombre, identificacion) VALUES ($1, $2) ON CONFLICT DO NOTHING RETURNING id",
+          [companyName, dummyNit]
+        );
+        
+        let empId;
+        if (empResult.rows.length > 0) {
+          empId = empResult.rows[0].id;
+        } else {
+          const existingEmp = await db.query("SELECT id FROM empresas WHERE nombre = $1", [companyName]);
+          empId = existingEmp.rows[0].id;
+        }
+
+        await db.query("UPDATE rutas SET id_empresa = $1 WHERE companyName = $2", [empId, companyName]);
+      }
+
+      // Eliminar la columna antigua
+      await db.query("ALTER TABLE rutas DROP COLUMN companyName");
+      console.log('Columna "companyName" eliminada y datos migrados.');
+    }
+
+    // Columna geom en rutas (si no existe)
     if (!routesColumnNames.includes('geom')) {
       await db.query("ALTER TABLE rutas ADD COLUMN geom GEOMETRY(LineString, 4326)");
       console.log('Columna "geom" añadida a rutas.');
     }
 
-    // Seed routes if empty
-    const routesCheck = await db.query("SELECT count(*) FROM rutas");
-    if (parseInt(routesCheck.rows[0].count) === 0) {
+    // --- Migración: Tabla guias ---
+    const guiasExists = await db.query(
+      "SELECT to_regclass('public.guias') as exists"
+    );
+    if (!guiasExists.rows[0].exists) {
+      console.log('Tabla "guias" no existe todavía, será creada en el siguiente arranque por CREATE TABLE IF NOT EXISTS.');
+    } else {
+      console.log('Tabla "guias" verificada correctamente.');
+    }
+
+    // Seed empresas y rutas si está vacío
+    const empresasCheck = await db.query("SELECT count(*) FROM empresas");
+    if (parseInt(empresasCheck.rows[0].count) === 0) {
+      const seedEmpresas = await db.query(`
+        INSERT INTO empresas (nombre, identificacion) VALUES 
+        ('Inca Trails Ltd.', 900123456),
+        ('Andes Adventures', 900654321),
+        ('Sierra Treks', 800111222),
+        ('Páramo Tours', 800333444),
+        ('Desert Guides', 700555666),
+        ('Quindío Nature', 700777888)
+        RETURNING id, nombre
+      `);
+      
+      const empMap = {};
+      seedEmpresas.rows.forEach(e => empMap[e.nombre] = e.id);
+
       const seedRoutesQuery = `
-        INSERT INTO rutas (title, imageUrl, description, height, companyName, difficulty, duration, guideName) VALUES
-        ('Camino del Inca', 'https://picsum.photos/seed/1/400/600', 'Una ruta milenaria que atraviesa los Andes hasta llegar a Machu Picchu.', 300, 'Inca Trails Ltd.', 'Alta', '4 días', 'Juan Pérez'),
-        ('Nevado del Cocuy', 'https://picsum.photos/seed/2/400/400', 'Nieve en el trópico colombiano. Siente la magia de los glaciares.', 200, 'Andes Adventures', 'Muy Alta', '2 días', 'María García'),
-        ('Ciudad Perdida', 'https://picsum.photos/seed/3/400/700', 'Tesoro arqueológico en la Sierra Nevada de Santa Marta.', 350, 'Sierra Treks', 'Media', '5 días', 'Carlos Ruiz'),
-        ('Páramo de Santurbán', 'https://picsum.photos/seed/4/400/500', 'Tierra de frailejones y nacimientos de agua cristalina.', 250, 'Páramo Tours', 'Media', '1 día', 'Elena Blanco'),
-        ('Desierto de la Tatacoa', 'https://picsum.photos/seed/5/400/600', 'Un laberinto de tierra roja bajo cielos estrellados.', 280, 'Desert Guides', 'Baja', '1 día', 'Felipe Mora'),
-        ('Valle del Cocora', 'https://picsum.photos/seed/6/400/450', 'Hogar de la palma de cera, árbol nacional de Colombia.', 220, 'Quindío Nature', 'Media', '6 horas', 'Sofía Vargas');
+        INSERT INTO rutas (title, imageUrl, description, height, id_empresa, difficulty, duration, guideName) VALUES
+        ('Camino del Inca', 'https://picsum.photos/seed/1/400/600', 'Una ruta milenaria que atraviesa los Andes hasta llegar a Machu Picchu.', 300, ${empMap['Inca Trails Ltd.']}, 'Alta', '4 días', 'Juan Pérez'),
+        ('Nevado del Cocuy', 'https://picsum.photos/seed/2/400/400', 'Nieve en el trópico colombiano. Siente la magia de los glaciares.', 200, ${empMap['Andes Adventures']}, 'Muy Alta', '2 días', 'María García'),
+        ('Ciudad Perdida', 'https://picsum.photos/seed/3/400/700', 'Tesoro arqueológico en la Sierra Nevada de Santa Marta.', 350, ${empMap['Sierra Treks']}, 'Media', '5 días', 'Carlos Ruiz'),
+        ('Páramo de Santurbán', 'https://picsum.photos/seed/4/400/500', 'Tierra de frailejones y nacimientos de agua cristalina.', 250, ${empMap['Páramo Tours']}, 'Media', '1 día', 'Elena Blanco'),
+        ('Desierto de la Tatacoa', 'https://picsum.photos/seed/5/400/600', 'Un laberinto de tierra roja bajo cielos estrellados.', 280, ${empMap['Desert Guides']}, 'Baja', '1 día', 'Felipe Mora'),
+        ('Valle del Cocora', 'https://picsum.photos/seed/6/400/450', 'Hogar de la palma de cera, árbol nacional de Colombia.', 220, ${empMap['Quindío Nature']}, 'Media', '6 horas', 'Sofía Vargas');
       `;
       await db.query(seedRoutesQuery);
-      console.log('Rutas iniciales creadas.');
+      console.log('Empresas y Rutas iniciales creadas.');
     }
+
+    // Sincronizar secuencias para evitar conflictos de primary key
+    await db.query("SELECT setval('usuarios_idusuario_seq', COALESCE((SELECT MAX(idusuario) FROM usuarios), 0) + 1, false)");
+    await db.query("SELECT setval('rutas_id_seq', COALESCE((SELECT MAX(id) FROM rutas), 0) + 1, false)");
+    await db.query("SELECT setval('empresas_id_seq', COALESCE((SELECT MAX(id) FROM empresas), 0) + 1, false)");
+    console.log('Secuencias sincronizadas correctamente');
 
     console.log('Base de Datos inicializada correctamente');
   } catch (err) {
@@ -112,6 +200,14 @@ app.get('/usuarios', async (req, res) => {
 // Registrar un usuario
 app.post('/usuarios', async (req, res) => {
   const { nombre, telefono, correo, password, foto, rol } = req.body;
+  if (!nombre || !correo || !password) {
+    return res.status(400).json({ error: 'Los campos nombre, correo y contraseña son obligatorios' });
+  }
+
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(correo)) {
+    return res.status(400).json({ error: 'El formato del correo electrónico es inválido' });
+  }
   try {
     const hashedPassword = await bcrypt.hash(password, 10);
     const result = await db.query(
@@ -120,8 +216,11 @@ app.post('/usuarios', async (req, res) => {
     );
     res.status(201).json({ idUsuario: result.rows[0].idusuario });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Error al crear usuario' });
+    console.error('ERROR EN REGISTRO:', err);
+    if (err.code === '23505') {
+      return res.status(409).json({ error: 'El correo ya está registrado' });
+    }
+    res.status(500).json({ error: 'Error al crear usuario', details: err.message });
   }
 });
 
@@ -148,6 +247,9 @@ app.post('/login', async (req, res) => {
       token,
       idUsuario: user.idusuario,
       nombre: user.nombre,
+      correo: user.correo,
+      telefono: user.telefono,
+      foto: user.foto,
       rol: user.rol,
       fechaCreacion: user.fecha_creacion
     });
@@ -162,19 +264,24 @@ app.post('/login', async (req, res) => {
 app.get('/rutas', async (req, res) => {
   try {
     const idUsuario = req.query.idUsuario;
-    let query = 'SELECT * FROM rutas';
+    let query = `
+      SELECT r.*, e.nombre as companyName, e.identificacion as companyIdentification,
+      ST_AsGeoJSON(r.geom) as geojson
+      FROM rutas r
+      LEFT JOIN empresas e ON r.id_empresa = e.id
+    `;
     let params = [];
     
     if (idUsuario) {
       query = `
-        SELECT r.*, ST_AsGeoJSON(r.geom) as geojson,
+        SELECT r.*, e.nombre as companyName, e.identificacion as companyIdentification,
+        ST_AsGeoJSON(r.geom) as geojson,
         CASE WHEN f.idruta IS NOT NULL THEN TRUE ELSE FALSE END as isFavorite
         FROM rutas r
+        LEFT JOIN empresas e ON r.id_empresa = e.id
         LEFT JOIN favoritos f ON r.id = f.idruta AND f.idusuario = $1
       `;
       params = [idUsuario];
-    } else {
-      query = 'SELECT *, ST_AsGeoJSON(geom) as geojson FROM rutas';
     }
     
     const { rows } = await db.query(query, params);
@@ -187,10 +294,10 @@ app.get('/rutas', async (req, res) => {
 
 app.post('/rutas', async (req, res) => {
   console.log('Recibida petición POST en /rutas');
-  const { title, gpx } = req.body;
-  console.log(`Título: ${title}, Longitud GPX: ${gpx ? gpx.length : 0}`);
+  const { title, gpx, id_empresa } = req.body;
+  console.log(`Título: ${title}, ID Empresa: ${id_empresa}, Longitud GPX: ${gpx ? gpx.length : 0}`);
   
-  const { imageUrl, description, height, companyName, difficulty, duration, guideName, latitude, longitude } = req.body;
+  const { imageUrl, description, height, difficulty, duration, guideName, latitude, longitude } = req.body;
   
   try {
     let geomWkt = null;
@@ -211,12 +318,12 @@ app.post('/rutas', async (req, res) => {
     }
 
     const query = `
-      INSERT INTO rutas (title, imageUrl, description, height, companyName, difficulty, duration, guideName, latitude, longitude, geom)
+      INSERT INTO rutas (title, imageUrl, description, height, id_empresa, difficulty, duration, guideName, latitude, longitude, geom)
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, ${geomWkt ? 'ST_GeomFromText($11, 4326)' : 'NULL'})
       RETURNING id
     `;
     
-    const params = [title, imageUrl, description, height, companyName, difficulty, duration, guideName, latitude, longitude];
+    const params = [title, imageUrl, description, height, id_empresa, difficulty, duration, guideName, latitude, longitude];
     if (geomWkt) params.push(geomWkt);
 
     const { rows } = await db.query(query, params);
@@ -227,14 +334,149 @@ app.post('/rutas', async (req, res) => {
   }
 });
 
+// --- Endpoints de Empresas ---
+
+app.get('/empresas', async (req, res) => {
+  try {
+    const { rows } = await db.query('SELECT * FROM empresas ORDER BY nombre ASC');
+    res.json(rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Error al obtener empresas' });
+  }
+});
+
+app.post('/empresas', async (req, res) => {
+  const { nombre, identificacion } = req.body;
+  try {
+    const result = await db.query(
+      'INSERT INTO empresas (nombre, identificacion) VALUES ($1, $2) RETURNING id',
+      [nombre, identificacion]
+    );
+    res.status(201).json({ id: result.rows[0].id, message: 'Empresa creada correctamente' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Error al crear empresa' });
+  }
+});
+
+// --- Endpoints de Guías ---
+
+// Obtener todos los guías (con nombre de empresa)
+app.get('/guias', async (req, res) => {
+  try {
+    const { rows } = await db.query(`
+      SELECT g.*, e.nombre as empresa_nombre
+      FROM guias g
+      LEFT JOIN empresas e ON g.id_empresa = e.id
+      ORDER BY g.nombre ASC
+    `);
+    res.json(rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Error al obtener guías' });
+  }
+});
+
+// Obtener guías por empresa
+app.get('/guias/empresa/:idEmpresa', async (req, res) => {
+  try {
+    const { rows } = await db.query(
+      `SELECT g.*, e.nombre as empresa_nombre
+       FROM guias g
+       LEFT JOIN empresas e ON g.id_empresa = e.id
+       WHERE g.id_empresa = $1
+       ORDER BY g.nombre ASC`,
+      [req.params.idEmpresa]
+    );
+    res.json(rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Error al obtener guías de la empresa' });
+  }
+});
+
+// Obtener un guía por ID
+app.get('/guias/:id', async (req, res) => {
+  try {
+    const { rows } = await db.query(
+      `SELECT g.*, e.nombre as empresa_nombre
+       FROM guias g
+       LEFT JOIN empresas e ON g.id_empresa = e.id
+       WHERE g.id = $1`,
+      [req.params.id]
+    );
+    if (rows.length === 0) return res.status(404).json({ error: 'Guía no encontrado' });
+    res.json(rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Error al obtener el guía' });
+  }
+});
+
+// Crear un guía
+app.post('/guias', async (req, res) => {
+  const { nombre, cedula, telefono, correo, foto, id_empresa } = req.body;
+  if (!nombre || !cedula) {
+    return res.status(400).json({ error: 'Los campos nombre y cedula son obligatorios' });
+  }
+  try {
+    const result = await db.query(
+      `INSERT INTO guias (nombre, cedula, telefono, correo, foto, id_empresa)
+       VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
+      [nombre, cedula, telefono, correo, foto, id_empresa]
+    );
+    res.status(201).json({ id: result.rows[0].id, message: 'Guía creado correctamente' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Error al crear guía', details: err.message });
+  }
+});
+
+// Actualizar un guía
+app.put('/guias/:id', async (req, res) => {
+  const { nombre, cedula, telefono, correo, foto, id_empresa } = req.body;
+  try {
+    const result = await db.query(
+      `UPDATE guias
+       SET nombre = $1, cedula = $2, telefono = $3, correo = $4, foto = $5, id_empresa = $6
+       WHERE id = $7 RETURNING id`,
+      [nombre, cedula, telefono, correo, foto, id_empresa, req.params.id]
+    );
+    if (result.rows.length === 0) return res.status(404).json({ error: 'Guía no encontrado' });
+    res.json({ message: 'Guía actualizado correctamente' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Error al actualizar guía', details: err.message });
+  }
+});
+
+// Eliminar un guía
+app.delete('/guias/:id', async (req, res) => {
+  try {
+    const result = await db.query('DELETE FROM guias WHERE id = $1 RETURNING id', [req.params.id]);
+    if (result.rows.length === 0) return res.status(404).json({ error: 'Guía no encontrado' });
+    res.json({ message: 'Guía eliminado correctamente' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Error al eliminar guía' });
+  }
+});
+
 // --- Endpoints de Favoritos ---
 
 app.get('/favoritos/:idUsuario', async (req, res) => {
   try {
-    const { rows } = await db.query(
-      'SELECT r.*, TRUE as isFavorite FROM rutas r JOIN favoritos f ON r.id = f.idruta WHERE f.idusuario = $1',
-      [req.params.idUsuario]
-    );
+    const query = `
+      SELECT r.*, e.nombre as companyName, e.identificacion as companyIdentification,
+      ST_AsGeoJSON(r.geom) as geojson,
+      TRUE as isFavorite
+      FROM rutas r
+      LEFT JOIN empresas e ON r.id_empresa = e.id
+      JOIN favoritos f ON r.id = f.idruta
+      WHERE f.idusuario = $1
+    `;
+    const { rows } = await db.query(query, [req.params.idUsuario]);
     res.json(rows);
   } catch (err) {
     console.error(err);

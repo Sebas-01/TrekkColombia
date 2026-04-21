@@ -2,6 +2,7 @@ package com.trekking.app.ui.screens
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.location.Location
 import android.util.Log
 import androidx.compose.animation.*
 import androidx.compose.foundation.*
@@ -34,6 +35,7 @@ import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
 import org.json.JSONObject
 import com.google.android.gms.location.*
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -51,6 +53,17 @@ fun RouteDetailScreen(
     val scrollState = rememberScrollState()
     val scope = rememberCoroutineScope()
     var isTracking by remember { mutableStateOf(false) }
+    var totalDistanceMeters by remember { mutableStateOf(0f) }
+    var previousTrackingLocation by remember { mutableStateOf<LatLng?>(null) }
+    var isOffRoute by remember { mutableStateOf(false) }
+
+    // Parsear el GeoJSON a una lista de LatLng para la polilínea
+    val polylinePoints = remember(route.geoJson) {
+        Log.d("RouteDetail", "GeoJSON received: ${route.geoJson}")
+        val points = parseGeoJsonToLatLng(route.geoJson)
+        Log.d("RouteDetail", "Parsed points count: ${points.size}")
+        points
+    }
     
     // Gestión de permisos para mostrar la ubicación del usuario
     val locationPermissionsState = rememberMultiplePermissionsState(
@@ -65,22 +78,82 @@ fun RouteDetailScreen(
     val fusedLocationClient = remember { LocationServices.getFusedLocationProviderClient(context) }
     var currentUserLocation by remember { mutableStateOf<LatLng?>(null) }
 
-    LaunchedEffect(isTracking) {
+    // --- SEGUIMIENTO DE UBICACIÓN CON ALTA PRECISIÓN ---
+    LaunchedEffect(isTracking, locationPermissionsState.allPermissionsGranted) {
         if (isTracking && locationPermissionsState.allPermissionsGranted) {
-            while (isTracking) {
-                try {
-                    @SuppressLint("MissingPermission")
-                    val locationResult = fusedLocationClient.lastLocation
-                    locationResult.addOnSuccessListener { location ->
-                        if (location != null) {
-                            currentUserLocation = LatLng(location.latitude, location.longitude)
+            // Reiniciar métricas al iniciar el recorrido
+            totalDistanceMeters = 0f
+            previousTrackingLocation = null
+            isOffRoute = false
+
+            // Configuración de máxima precisión (GPS)
+            val locationRequest = LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 2000L)
+                .setMinUpdateIntervalMillis(1000L)
+                .setMaxUpdateDelayMillis(3000L)
+                .setWaitForAccurateLocation(true)
+                .build()
+
+            val locationCallback = object : LocationCallback() {
+                override fun onLocationResult(locationResult: LocationResult) {
+                    locationResult.lastLocation?.let { location ->
+                        val newLocation = LatLng(location.latitude, location.longitude)
+                        currentUserLocation = newLocation
+
+                        // --- Cálculo de distancia recorrida ---
+                        previousTrackingLocation?.let { prev ->
+                            val results = FloatArray(1)
+                            Location.distanceBetween(
+                                prev.latitude, prev.longitude,
+                                newLocation.latitude, newLocation.longitude,
+                                results
+                            )
+                            // Filtrar ruido GPS: con alta precisión el umbral puede ser más fino (2m)
+                            if (results[0] > 2f) {
+                                totalDistanceMeters += results[0]
+                                previousTrackingLocation = newLocation
+                            }
+                        } ?: run {
+                            previousTrackingLocation = newLocation
+                        }
+
+                        // --- Detección de desviación de la ruta oficial ---
+                        if (polylinePoints.isNotEmpty()) {
+                            val minDistToRoute = polylinePoints.minOf { point ->
+                                val results = FloatArray(1)
+                                Location.distanceBetween(
+                                    newLocation.latitude, newLocation.longitude,
+                                    point.latitude, point.longitude,
+                                    results
+                                )
+                                results[0]
+                            }
+                            isOffRoute = minDistToRoute > 150f // Umbral: 150 metros
+                            Log.d("RouteDetail", "Precise Dist to route: ${minDistToRoute.toInt()}m | Off-route: $isOffRoute")
                         }
                     }
-                } catch (e: Exception) {
-                    Log.e("RouteDetail", "Error getting location", e)
                 }
-                delay(2000) // Actualizar cada 2 segundos
             }
+
+            try {
+                @SuppressLint("MissingPermission")
+                fusedLocationClient.requestLocationUpdates(
+                    locationRequest,
+                    locationCallback,
+                    android.os.Looper.getMainLooper()
+                )
+                // Mantener el efecto activo mientras isTracking sea true
+                awaitCancellation()
+            } catch (e: Exception) {
+                Log.e("RouteDetail", "Error en seguimiento de ubicación", e)
+            } finally {
+                // Limpieza al detener el seguimiento o salir de la pantalla
+                fusedLocationClient.removeLocationUpdates(locationCallback)
+                previousTrackingLocation = null
+                isOffRoute = false
+            }
+        } else {
+            previousTrackingLocation = null
+            isOffRoute = false
         }
     }
 
@@ -222,14 +295,6 @@ fun RouteDetailScreen(
                     position = CameraPosition.fromLatLngZoom(routeLocation, 12f)
                 }
 
-                // Parsear el GeoJSON a una lista de LatLng para la polilínea
-                val polylinePoints = remember(route.geoJson) {
-                    Log.d("RouteDetail", "GeoJSON received: ${route.geoJson}")
-                    val points = parseGeoJsonToLatLng(route.geoJson)
-                    Log.d("RouteDetail", "Parsed points count: ${points.size}")
-                    points
-                }
-
                 // Ajustar cámara cuando los datos estén listos o para seguimiento
                 LaunchedEffect(route.id, polylinePoints, route.latitude, isTracking, currentUserLocation) {
                     if (isTracking && currentUserLocation != null) {
@@ -322,27 +387,73 @@ fun RouteDetailScreen(
                         )
                     }
 
-                    // Etiqueta de estado de seguimiento
+                    // Indicadores de recorrido activo
                     if (isTracking) {
-                        Surface(
+                        Column(
                             modifier = Modifier
                                 .align(Alignment.TopCenter)
-                                .padding(16.dp),
-                            shape = RoundedCornerShape(20.dp),
-                            color = Color.Red,
-                            shadowElevation = 4.dp
+                                .padding(top = 16.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            Row(
-                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                                verticalAlignment = Alignment.CenterVertically
+                            // Banner principal: estado + distancia recorrida
+                            Surface(
+                                shape = RoundedCornerShape(20.dp),
+                                color = Color.Red,
+                                shadowElevation = 4.dp
                             ) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(8.dp)
-                                        .background(Color.White, CircleShape)
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text("RECORRIDO ACTIVO", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(8.dp)
+                                            .background(Color.White, CircleShape)
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        "RECORRIDO ACTIVO",
+                                        color = Color.White,
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    Spacer(modifier = Modifier.width(10.dp))
+                                    Text(
+                                        "·  ${formatDistance(totalDistanceMeters)}",
+                                        color = Color.White.copy(alpha = 0.9f),
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                            }
+
+                            // Alerta de desviación de ruta
+                            if (isOffRoute && polylinePoints.isNotEmpty()) {
+                                Surface(
+                                    shape = RoundedCornerShape(20.dp),
+                                    color = Color(0xFFE65100),
+                                    shadowElevation = 4.dp
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Icon(
+                                            Icons.Default.Warning,
+                                            contentDescription = null,
+                                            tint = Color.Yellow,
+                                            modifier = Modifier.size(14.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        Text(
+                                            "FUERA DE RUTA — Regresa al sendero",
+                                            color = Color.White,
+                                            fontSize = 11.sp,
+                                            fontWeight = FontWeight.ExtraBold
+                                        )
+                                    }
+                                }
                             }
                         }
                     }
@@ -373,6 +484,17 @@ fun RouteDetailScreen(
                 Spacer(modifier = Modifier.height(40.dp))
             }
         }
+    }
+}
+
+/**
+ * Formatea metros a una cadena amigable (ej: "850 m" o "1.23 km").
+ */
+fun formatDistance(meters: Float): String {
+    return if (meters < 1000f) {
+        "${meters.toInt()} m"
+    } else {
+        String.format("%.2f km", meters / 1000f)
     }
 }
 

@@ -30,4 +30,23 @@ interface ApiService {
 
     @DELETE("/favoritos/{idUsuario}/{idRuta}")
     suspend fun removeFavorito(@Path("idUsuario") idUsuario: Int, @Path("idRuta") idRuta: Int): Response<MessageResponse>
+
+    // --- Guías ---
+    @GET("/guias")
+    suspend fun getGuias(): Response<List<Guia>>
+
+    @GET("/guias/{id}")
+    suspend fun getGuiaById(@Path("id") id: Int): Response<Guia>
+
+    @GET("/guias/empresa/{idEmpresa}")
+    suspend fun getGuiasByEmpresa(@Path("idEmpresa") idEmpresa: Int): Response<List<Guia>>
+
+    @POST("/guias")
+    suspend fun createGuia(@Body request: GuiaRequest): Response<Map<String, Any>>
+
+    @PUT("/guias/{id}")
+    suspend fun updateGuia(@Path("id") id: Int, @Body request: GuiaRequest): Response<MessageResponse>
+
+    @DELETE("/guias/{id}")
+    suspend fun deleteGuia(@Path("id") id: Int): Response<MessageResponse>
 }
