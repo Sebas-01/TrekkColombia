@@ -16,6 +16,7 @@ import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
@@ -33,6 +34,7 @@ fun LoginScreen(
     onLoginSuccess: (Usuario) -> Unit,
     onRegisterClick: () -> Unit
 ) {
+    val context = LocalContext.current
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(false) }
@@ -153,17 +155,21 @@ fun LoginScreen(
                                     if (response.isSuccessful) {
                                         val loginRes = response.body()
                                         if (loginRes != null) {
-                                            onLoginSuccess(
-                                                Usuario(
-                                                    idUsuario = loginRes.idUsuario,
-                                                    nombre = loginRes.nombre,
-                                                    telefono = loginRes.telefono,
-                                                    correo = loginRes.correo ?: email,
-                                                    foto = loginRes.foto,
-                                                    rol = loginRes.rol ?: "usuario",
-                                                    fechaCreacion = loginRes.fechaCreacion
-                                                )
+                                            val user = Usuario(
+                                                idUsuario = loginRes.idUsuario,
+                                                nombre = loginRes.nombre,
+                                                telefono = loginRes.telefono,
+                                                correo = loginRes.correo ?: email,
+                                                foto = loginRes.foto,
+                                                fechaCreacion = loginRes.fechaCreacion
                                             )
+                                            // Guardar sesión persistente
+                                            com.trekking.app.api.SessionManager.saveSession(
+                                                context, 
+                                                user, 
+                                                loginRes.token
+                                            )
+                                            onLoginSuccess(user)
                                         } else {
                                             errorMessage = "Respuesta inválida"
                                         }

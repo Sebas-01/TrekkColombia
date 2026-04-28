@@ -32,8 +32,13 @@ import com.trekking.app.api.FavoriteRequest
 import com.trekking.app.api.RetrofitClient
 import com.trekking.app.api.TrekkingRoute
 import com.trekking.app.api.Usuario
+import com.trekking.app.data.local.AppDatabase
+import com.trekking.app.data.local.RutaEntity
+import com.trekking.app.data.local.toTrekkingRoute
 import com.trekking.app.ui.theme.TrekkingAppTheme
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.Dispatchers
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -50,14 +55,52 @@ fun FeedScreen(
     var isLoading by remember { mutableStateOf(true) }
     val scope = rememberCoroutineScope()
 
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val db = remember { AppDatabase.getDatabase(context) }
+
     LaunchedEffect(currentUser) {
         try {
             val response = RetrofitClient.instance.getRutas(currentUser?.idUsuario)
             if (response.isSuccessful) {
-                routes = response.body() ?: emptyList()
+                val remoteRoutes = response.body() ?: emptyList()
+                routes = remoteRoutes
+                
+                // Guardar en caché local
+                withContext(Dispatchers.IO) {
+                    val entities = remoteRoutes.map { 
+                        RutaEntity(
+                            id = it.id,
+                            title = it.title,
+                            imageUrl = it.imageUrl,
+                            description = it.description,
+                            height = it.height,
+                            companyName = it.companyName,
+                            difficulty = it.difficulty,
+                            duration = it.duration,
+                            guideName = it.guideName,
+                            latitude = it.latitude,
+                            longitude = it.longitude,
+                            geoJson = it.geoJson,
+                            isFavorite = it.isFavorite
+                        )
+                    }
+                    db.rutaDao().deleteAllRutas()
+                    db.rutaDao().insertRutas(entities)
+                }
+            } else {
+                // Si la respuesta no es exitosa, intentar cargar de la DB local
+                val localRutas = withContext(Dispatchers.IO) { db.rutaDao().getAllRutas() }
+                if (localRutas.isNotEmpty()) {
+                    routes = localRutas.map { it.toTrekkingRoute() }
+                }
             }
         } catch (e: Exception) {
-            Log.e("FeedScreen", "Error fetching routes", e)
+            Log.e("FeedScreen", "Error fetching routes, loading from local DB", e)
+            // Cargar de la DB local en caso de error de red
+            val localRutas = withContext(Dispatchers.IO) { db.rutaDao().getAllRutas() }
+            if (localRutas.isNotEmpty()) {
+                routes = localRutas.map { it.toTrekkingRoute() }
+            }
         } finally {
             isLoading = false
         }
@@ -143,10 +186,8 @@ fun FeedScreen(
                             Icon(Icons.Default.FavoriteBorder, contentDescription = "Favoritos", tint = Color.Black)
                         }
                         
-                        if (currentUser?.isSuperAdmin == true) {
-                            IconButton(onClick = onUserListClick) {
-                                Icon(Icons.Default.Person, contentDescription = "Usuarios", tint = Color.Black)
-                            }
+                        IconButton(onClick = onUserListClick) {
+                            Icon(Icons.Default.Person, contentDescription = "Usuarios", tint = Color.Black)
                         }
                         
                         IconButton(onClick = onLogout) {
@@ -236,44 +277,13 @@ fun FeedItem(route: TrekkingRoute, onFavoriteClick: () -> Unit, onClick: () -> U
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = route.description,
-                    fontSize = 12.sp,
-                    color = Color.Gray,
                     maxLines = 2,
-                    lineHeight = 16.sp,
-                    overflow = TextOverflow.Ellipsis
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = route.companyName,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = Color(0xFF192f6a)
+                    overflow = TextOverflow.Ellipsis,
+                    fontSize = 13.sp,
+                    color = Color.Gray,
+                    lineHeight = 18.sp
                 )
             }
         }
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun FeedScreenPreview() {
-    TrekkingAppTheme {
-        val mockUser = Usuario(
-            idUsuario = 1,
-            nombre = "Sebastian",
-            telefono = "123456",
-            correo = "sebas@gmail.com",
-            foto = null,
-            rol = "usuario",
-            fechaCreacion = null
-        )
-        FeedScreen(
-            currentUser = mockUser,
-            onProfileClick = {},
-            onLogout = {},
-            onFavoritesClick = {},
-            onUserListClick = {},
-            onRouteClick = {}
-        )
     }
 }

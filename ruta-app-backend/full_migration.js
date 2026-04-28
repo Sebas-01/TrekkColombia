@@ -81,17 +81,16 @@ async function migrate() {
     const usuariosRes = await localClient.query('SELECT * FROM usuarios');
     for (const row of usuariosRes.rows) {
       await remoteClient.query(`
-        INSERT INTO usuarios (idusuario, nombre, telefono, correo, password, foto, rol, fecha_creacion)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        INSERT INTO usuarios (idusuario, nombre, telefono, correo, password, foto, fecha_creacion)
+        VALUES ($1, $2, $3, $4, $5, $6, $7)
         ON CONFLICT (idusuario) DO UPDATE SET
           nombre = EXCLUDED.nombre,
           telefono = EXCLUDED.telefono,
           correo = EXCLUDED.correo,
           password = EXCLUDED.password,
           foto = EXCLUDED.foto,
-          rol = EXCLUDED.rol,
           fecha_creacion = EXCLUDED.fecha_creacion
-      `, [row.idusuario, row.nombre, row.telefono, row.correo, row.password, row.foto, row.rol, row.fecha_creacion]);
+      `, [row.idusuario, row.nombre, row.telefono, row.correo, row.password, row.foto, row.fecha_creacion]);
     }
     console.log(`✅ Migrated ${usuariosRes.rows.length} usuarios`);
 

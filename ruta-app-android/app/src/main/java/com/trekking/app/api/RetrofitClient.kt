@@ -5,9 +5,27 @@ import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
+import okhttp3.Interceptor
+import okhttp3.Response
+
 object RetrofitClient {
-    // 10.0.2.2 es la dirección IP especial para acceder al localhost de tu PC desde el emulador de Android
-    private const val BASE_URL = "http://10.0.2.2:3000"
+    // URL de producción en Render
+    private const val BASE_URL = "https://trekking-backend-yxz0.onrender.com"
+
+    private val authInterceptor = Interceptor { chain ->
+        val originalRequest = chain.request()
+        val token = SessionManager.getToken(com.trekking.app.TrekkingApplication.instance)
+        
+        val newRequest = if (token != null) {
+            originalRequest.newBuilder()
+                .header("Authorization", "Bearer $token")
+                .build()
+        } else {
+            originalRequest
+        }
+        
+        chain.proceed(newRequest)
+    }
 
     val instance: ApiService by lazy {
         val logging = HttpLoggingInterceptor().apply {
@@ -16,6 +34,7 @@ object RetrofitClient {
 
         val client = OkHttpClient.Builder()
             .addInterceptor(logging)
+            .addInterceptor(authInterceptor)
             .build()
 
         val retrofit = Retrofit.Builder()

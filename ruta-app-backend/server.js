@@ -28,7 +28,6 @@ const initDb = async () => {
       correo VARCHAR(100) UNIQUE NOT NULL,
       password VARCHAR(255) NOT NULL,
       foto TEXT,
-      rol VARCHAR(50) DEFAULT 'usuario',
       fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
 
@@ -76,10 +75,6 @@ const initDb = async () => {
     const columns = await db.query("SELECT column_name FROM information_schema.columns WHERE table_name = 'usuarios'");
     const columnNames = columns.rows.map(c => c.column_name);
 
-    if (!columnNames.includes('rol')) {
-      await db.query("ALTER TABLE usuarios ADD COLUMN rol VARCHAR(50) DEFAULT 'usuario'");
-      console.log('Columna "rol" añadida.');
-    }
     if (!columnNames.includes('fecha_creacion')) {
       await db.query("ALTER TABLE usuarios ADD COLUMN fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP");
       console.log('Columna "fecha_creacion" añadida.');
@@ -199,7 +194,7 @@ app.get('/usuarios', async (req, res) => {
 
 // Registrar un usuario
 app.post('/usuarios', async (req, res) => {
-  const { nombre, telefono, correo, password, foto, rol } = req.body;
+  const { nombre, telefono, correo, password, foto } = req.body;
   if (!nombre || !correo || !password) {
     return res.status(400).json({ error: 'Los campos nombre, correo y contraseña son obligatorios' });
   }
@@ -211,8 +206,8 @@ app.post('/usuarios', async (req, res) => {
   try {
     const hashedPassword = await bcrypt.hash(password, 10);
     const result = await db.query(
-      'INSERT INTO usuarios (nombre, telefono, correo, password, foto, rol) VALUES ($1, $2, $3, $4, $5, $6) RETURNING idusuario',
-      [nombre, telefono, correo, hashedPassword, foto, rol || 'usuario']
+      'INSERT INTO usuarios (nombre, telefono, correo, password, foto) VALUES ($1, $2, $3, $4, $5) RETURNING idusuario',
+      [nombre, telefono, correo, hashedPassword, foto]
     );
     res.status(201).json({ idUsuario: result.rows[0].idusuario });
   } catch (err) {
@@ -241,7 +236,7 @@ app.post('/login', async (req, res) => {
       console.log('Password incorrecta');
       return res.status(401).json({ error: 'Contraseña incorrecta' });
     }
-    const token = jwt.sign({ id: user.idusuario, rol: user.rol }, process.env.JWT_SECRET, { expiresIn: '1h' });
+    const token = jwt.sign({ id: user.idusuario }, process.env.JWT_SECRET, { expiresIn: '1h' });
     console.log('Login exitoso');
     res.json({
       token,
@@ -250,7 +245,6 @@ app.post('/login', async (req, res) => {
       correo: user.correo,
       telefono: user.telefono,
       foto: user.foto,
-      rol: user.rol,
       fechaCreacion: user.fecha_creacion
     });
   } catch (err) {

@@ -8,7 +8,7 @@ import com.trekking.app.api.*
 import com.trekking.app.ui.screens.*
 import com.trekking.app.ui.theme.TrekkingAppTheme
 
-enum class Screen { Login, Feed, UserList, ProfileUpdate, RouteDetail, UserCreation, AdminDashboard, Register, Favorites, RouteList }
+enum class Screen { Login, Feed, UserList, ProfileUpdate, RouteDetail, UserCreation, Register, Favorites, RouteList }
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -23,8 +23,15 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun AppNavigation() {
-    var currentScreen by remember { mutableStateOf(Screen.Login) }
-    var currentUser by remember { mutableStateOf<Usuario?>(null) }
+    val context = androidx.compose.ui.platform.LocalContext.current
+    
+    // Intentar recuperar sesión al iniciar
+    val savedUser = remember { SessionManager.getUser(context) }
+    
+    var currentScreen by remember { 
+        mutableStateOf(if (savedUser != null) Screen.Feed else Screen.Login) 
+    }
+    var currentUser by remember { mutableStateOf<Usuario?>(savedUser) }
     var editingUser by remember { mutableStateOf<Usuario?>(null) }
     var selectedRoute by remember { mutableStateOf<TrekkingRoute?>(null) }
 
@@ -32,25 +39,11 @@ fun AppNavigation() {
         Screen.Login -> LoginScreen(
             onLoginSuccess = { user ->
                 currentUser = user
-                // Redirección basada en el rol
-                if (user.isSuperAdmin) {
-                    currentScreen = Screen.AdminDashboard
-                } else {
-                    currentScreen = Screen.Feed
-                }
+                currentScreen = Screen.Feed
             },
             onRegisterClick = { currentScreen = Screen.Register }
         )
-        Screen.AdminDashboard -> AdminDashboardScreen(
-            currentUser = currentUser,
-            onManageUsersClick = { currentScreen = Screen.UserList },
-            onCreateUserClick = { currentScreen = Screen.UserCreation },
-            onManageRoutesClick = { currentScreen = Screen.RouteList },
-            onLogout = {
-                currentUser = null
-                currentScreen = Screen.Login
-            }
-        )
+
         Screen.Feed -> FeedScreen(
             currentUser = currentUser,
             onProfileClick = {
@@ -58,6 +51,7 @@ fun AppNavigation() {
                 currentScreen = Screen.ProfileUpdate
             },
             onLogout = {
+                SessionManager.clearSession(context)
                 currentUser = null
                 currentScreen = Screen.Login
             },
@@ -90,13 +84,10 @@ fun AppNavigation() {
                 currentScreen = Screen.UserCreation
             },
             onBack = {
-                if (currentUser?.isSuperAdmin == true) {
-                    currentScreen = Screen.AdminDashboard
-                } else {
-                    currentScreen = Screen.Feed
-                }
+                currentScreen = Screen.Feed
             },
             onLogout = {
+                SessionManager.clearSession(context)
                 currentUser = null
                 currentScreen = Screen.Login
             }
@@ -104,35 +95,23 @@ fun AppNavigation() {
         Screen.ProfileUpdate -> ProfileUpdateScreen(
             user = editingUser,
             onBack = { 
-                if (currentUser?.isSuperAdmin == true) {
-                    currentScreen = Screen.UserList 
-                } else {
-                    currentScreen = Screen.Feed
-                }
+                currentScreen = Screen.Feed
             },
             onUpdateSuccess = { updatedUser ->
                 if (currentUser?.idUsuario == updatedUser.idUsuario) {
                     currentUser = updatedUser
                 }
-                if (currentUser?.isSuperAdmin == true) {
-                    currentScreen = Screen.UserList 
-                } else {
-                    currentScreen = Screen.Feed
-                }
+                currentScreen = Screen.Feed
             }
         )
         Screen.RouteDetail -> RouteDetailScreen(
             route = selectedRoute,
             onBack = { 
-                if (currentUser?.isSuperAdmin == true) {
-                    currentScreen = Screen.RouteList
-                } else {
-                    currentScreen = Screen.Feed
-                }
+                currentScreen = Screen.Feed
             }
         )
         Screen.RouteList -> RouteListScreen(
-            onBack = { currentScreen = Screen.AdminDashboard },
+            onBack = { currentScreen = Screen.Feed },
             onRouteContentClick = { route ->
                 selectedRoute = route
                 currentScreen = Screen.RouteDetail

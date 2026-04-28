@@ -8,13 +8,8 @@ data class Usuario(
     val telefono: String?,
     val correo: String,
     val foto: String?,
-    val rol: String,
     @SerializedName("fecha_creacion") val fechaCreacion: String?
-) {
-    // Comprobación de roles más robusta
-    val isSuperAdmin: Boolean get() = rol.equals("super_admin", ignoreCase = true) || rol.equals("admin", ignoreCase = true)
-    val isCompanyAdmin: Boolean get() = rol.equals("administrador_empresa", ignoreCase = true)
-}
+)
 
 data class LoginRequest(
     val correo: String,
@@ -28,7 +23,6 @@ data class LoginResponse(
     val correo: String?,
     val telefono: String?,
     val foto: String?,
-    val rol: String?, // Aseguramos que mapee 'rol'
     @SerializedName("fechaCreacion") val fechaCreacion: String?
 )
 
@@ -37,7 +31,6 @@ data class RegisterRequest(
     val correo: String,
     val telefono: String?,
     val password: String,
-    val rol: String,
     val foto: String? = ""
 )
 

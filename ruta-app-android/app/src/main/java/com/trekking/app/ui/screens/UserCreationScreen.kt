@@ -33,13 +33,10 @@ fun UserCreationScreen(
     var correo by remember { mutableStateOf("") }
     var telefono by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
-    var rol by remember { mutableStateOf("usuario") }
     var isLoading by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     
     val scope = rememberCoroutineScope()
-    val roles = listOf("usuario", "administrador_empresa", "super_admin")
-    var expanded by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -103,35 +100,7 @@ fun UserCreationScreen(
                     )
                     Spacer(modifier = Modifier.height(24.dp))
                     
-                    // Role Selector
-                    ExposedDropdownMenuBox(
-                        expanded = expanded,
-                        onExpandedChange = { expanded = !expanded }
-                    ) {
-                        OutlinedTextField(
-                            value = rol,
-                            onValueChange = {},
-                            readOnly = true,
-                            label = { Text("Rol") },
-                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-                            modifier = Modifier.menuAnchor().fillMaxWidth(),
-                            shape = RoundedCornerShape(12.dp)
-                        )
-                        ExposedDropdownMenu(
-                            expanded = expanded,
-                            onDismissRequest = { expanded = false }
-                        ) {
-                            roles.forEach { role ->
-                                DropdownMenuItem(
-                                    text = { Text(role) },
-                                    onClick = {
-                                        rol = role
-                                        expanded = false
-                                    }
-                                )
-                            }
-                        }
-                    }
+
 
                     Spacer(modifier = Modifier.height(32.dp))
 
@@ -146,8 +115,7 @@ fun UserCreationScreen(
                                             nombre = nombre,
                                             correo = correo,
                                             telefono = telefono,
-                                            password = password,
-                                            rol = rol
+                                            password = password
                                         )
                                         
                                         val response = RetrofitClient.instance.registerUsuario(request)

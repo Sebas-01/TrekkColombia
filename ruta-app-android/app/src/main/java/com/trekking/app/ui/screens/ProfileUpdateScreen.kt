@@ -216,7 +216,6 @@ fun ProfileUpdateScreen(
                                                 telefono.ifEmpty { null },
                                                 email,
                                                 user.foto,
-                                                user.rol,
                                                 user.fechaCreacion
                                             )
                                         )

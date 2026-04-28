@@ -51,7 +51,6 @@ erDiagram
         string correo
         string password
         string foto
-        string rol
         timestamp fecha_creacion
     }
     

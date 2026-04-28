@@ -210,8 +210,7 @@ fun RegisterScreen(
                                             nombre = nombre,
                                             correo = correo,
                                             telefono = telefono,
-                                            password = password,
-                                            rol = "usuario"
+                                            password = password
                                         )
                                         
                                         val response = RetrofitClient.instance.registerUsuario(request)

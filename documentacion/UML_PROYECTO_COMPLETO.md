@@ -53,7 +53,6 @@ erDiagram
         string nombre
         string correo UNIQUE
         string password
-        string rol "admin/user"
         timestamp fecha_creacion
     }
 
@@ -96,14 +95,13 @@ Representa las interacciones de los diferentes actores con el sistema.
 
 ```mermaid
 useCaseDiagram
-    actor Usuario as "Usuario Final"
-    actor Admin as "Administrador"
+    actor Usuario as "Usuario (Explorador)"
     actor Sistema as "Sistema Supabase"
 
     package "Trekking App" {
         usecase UC1 as "Explorar Rutas"
         usecase UC2 as "Gestionar Favoritos"
-        usecase UC3 as "Iniciar Sesión"
+        usecase UC3 as "Autenticación (Login/Registro)"
         usecase UC4 as "Cargar Archivos GPX"
         usecase UC5 as "Gestionar Empresas/Guías"
     }
@@ -111,13 +109,12 @@ useCaseDiagram
     Usuario --> UC1
     Usuario --> UC2
     Usuario --> UC3
-    Admin --> UC3
-    Admin --> UC4
-    Admin --> UC5
+    Usuario --> UC4
+    Usuario --> UC5
     UC4 --> Sistema
 ```
 > [!NOTE]
-> El Administrador tiene permisos extendidos para la gestión de activos geográficos (GPX) y entidades comerciales (Empresas).
+> El sistema ha sido simplificado para un único tipo de usuario final, quien posee permisos para explorar, gestionar favoritos y administrar activos si es necesario.
 
 ---
 

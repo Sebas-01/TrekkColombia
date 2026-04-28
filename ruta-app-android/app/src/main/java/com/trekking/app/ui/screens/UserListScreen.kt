@@ -42,7 +42,7 @@ fun UserListScreen(
     var isLoading by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
-    val isAdmin = currentUser?.isSuperAdmin == true
+    val canManage = true // Everyone can manage if there is only one user type
 
     fun refreshUsers() {
         scope.launch {
@@ -86,7 +86,6 @@ fun UserListScreen(
             )
         },
         floatingActionButton = {
-            if (isAdmin) {
                 FloatingActionButton(
                     onClick = onCreateClick,
                     containerColor = Color(0xFF3b5998),
@@ -95,7 +94,6 @@ fun UserListScreen(
                     Icon(Icons.Default.Add, contentDescription = "Crear Usuario")
                 }
             }
-        }
     ) { padding ->
         Column(modifier = Modifier.padding(padding).fillMaxSize().background(Color(0xFFF8FAFC))) {
             // Search Bar
@@ -128,7 +126,7 @@ fun UserListScreen(
                     items(filteredUsers) { user ->
                         UserCard(
                             user = user,
-                            isAdmin = isAdmin,
+                            isAdmin = canManage,
                             onEditClick = { onEditClick(user) },
                             onDeleteClick = {
                                 scope.launch {
@@ -173,22 +171,7 @@ fun UserCard(user: Usuario, isAdmin: Boolean, onEditClick: () -> Unit, onDeleteC
                 Text(user.nombre, fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color(0xFF334155))
                 Text(user.correo, fontSize = 14.sp, color = Color(0xFF64748B))
                 
-                // Manejo seguro del rol nulo
-                val displayRol = user.rol ?: "usuario"
-                if (displayRol != "usuario") {
-                    Surface(
-                        color = Color(0xFF3b5998).copy(alpha = 0.1f),
-                        shape = RoundedCornerShape(4.dp)
-                    ) {
-                        Text(
-                            displayRol.uppercase(),
-                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.Black,
-                            color = Color(0xFF3b5998)
-                        )
-                    }
-                }
+
             }
             if (isAdmin) {
                 Row {
@@ -218,7 +201,6 @@ fun UserListScreenPreview() {
             telefono = "123456",
             correo = "admin@trekking.com",
             foto = null,
-            rol = "super_admin",
             fechaCreacion = "2024-01-01"
         )
         UserListScreen(

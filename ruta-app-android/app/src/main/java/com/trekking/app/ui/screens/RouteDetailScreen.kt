@@ -37,7 +37,11 @@ import org.json.JSONObject
 import com.google.android.gms.location.*
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.delay
+import com.trekking.app.data.local.AppDatabase
+import com.trekking.app.data.local.toTrekkingRoute
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.Dispatchers
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalPermissionsApi::class)
 @Composable
@@ -45,10 +49,10 @@ fun RouteDetailScreen(
     route: TrekkingRoute?,
     onBack: () -> Unit
 ) {
-    if (route == null) {
-        onBack()
-        return
-    }
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val db = remember { AppDatabase.getDatabase(context) }
+    var currentRoute by remember { mutableStateOf(route) }
+    var isOfflineMode by remember { mutableStateOf(false) }
 
     val scrollState = rememberScrollState()
     val scope = rememberCoroutineScope()
@@ -57,10 +61,27 @@ fun RouteDetailScreen(
     var previousTrackingLocation by remember { mutableStateOf<LatLng?>(null) }
     var isOffRoute by remember { mutableStateOf(false) }
 
+    // Intentar recuperar datos locales si faltan datos críticos (ej: geojson)
+    LaunchedEffect(route?.id) {
+        if (route != null && route.geoJson == null) {
+            val local = withContext(Dispatchers.IO) { db.rutaDao().getRutaById(route.id) }
+            if (local != null) {
+                currentRoute = local.toTrekkingRoute()
+                isOfflineMode = true
+            }
+        }
+    }
+
+    val currentRouteData = currentRoute
+    if (currentRouteData == null) {
+        onBack()
+        return
+    }
+
     // Parsear el GeoJSON a una lista de LatLng para la polilínea
-    val polylinePoints = remember(route.geoJson) {
-        Log.d("RouteDetail", "GeoJSON received: ${route.geoJson}")
-        val points = parseGeoJsonToLatLng(route.geoJson)
+    val polylinePoints = remember(currentRouteData.geoJson) {
+        Log.d("RouteDetail", "GeoJSON received: ${currentRouteData.geoJson}")
+        val points = parseGeoJsonToLatLng(currentRouteData.geoJson)
         Log.d("RouteDetail", "Parsed points count: ${points.size}")
         points
     }
@@ -74,7 +95,6 @@ fun RouteDetailScreen(
     )
 
     // Cliente de ubicación
-    val context = androidx.compose.ui.platform.LocalContext.current
     val fusedLocationClient = remember { LocationServices.getFusedLocationProviderClient(context) }
     var currentUserLocation by remember { mutableStateOf<LatLng?>(null) }
 
@@ -164,7 +184,14 @@ fun RouteDetailScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(route.title, fontWeight = FontWeight.Bold) },
+                title = { 
+                    Column {
+                        Text(currentRouteData.title, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                        if (isOfflineMode) {
+                            Text("Modo Offline - Datos guardados", fontSize = 10.sp, color = Color.Gray)
+                        }
+                    }
+                },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Regresar")
@@ -185,8 +212,8 @@ fun RouteDetailScreen(
         ) {
             // Hero Image
             AsyncImage(
-                model = route.imageUrl,
-                contentDescription = route.title,
+                model = currentRouteData.imageUrl,
+                contentDescription = currentRouteData.title,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(300.dp),
@@ -196,13 +223,13 @@ fun RouteDetailScreen(
             Column(modifier = Modifier.padding(20.dp)) {
                 // Header Info
                 Text(
-                    text = route.title,
+                    text = currentRouteData.title,
                     fontSize = 28.sp,
                     fontWeight = FontWeight.ExtraBold,
                     color = Color(0xFF1A2b4c)
                 )
                 Text(
-                    text = "por ${route.companyName}",
+                    text = "por ${currentRouteData.companyName}",
                     fontSize = 16.sp,
                     color = Color(0xFF3b5998),
                     fontWeight = FontWeight.SemiBold
@@ -218,9 +245,9 @@ fun RouteDetailScreen(
                     StatCard(
                         icon = Icons.Default.Info,
                         label = "Dificultad",
-                        value = route.difficulty,
+                        value = currentRouteData.difficulty,
                         modifier = Modifier.weight(1f),
-                        color = when(route.difficulty.lowercase()) {
+                        color = when(currentRouteData.difficulty.lowercase()) {
                             "baja" -> Color(0xFF4CAF50)
                             "media" -> Color(0xFFFFC107)
                             else -> Color(0xFFF44336)
@@ -229,7 +256,7 @@ fun RouteDetailScreen(
                     StatCard(
                         icon = Icons.Default.DateRange,
                         label = "Duración",
-                        value = route.duration,
+                        value = currentRouteData.duration,
                         modifier = Modifier.weight(1f),
                         color = Color(0xFF3b5998)
                     )
@@ -246,7 +273,7 @@ fun RouteDetailScreen(
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = route.description,
+                    text = currentRouteData.description,
                     fontSize = 16.sp,
                     lineHeight = 24.sp,
                     color = Color(0xFF334155)
@@ -285,8 +312,8 @@ fun RouteDetailScreen(
                 
                 Spacer(modifier = Modifier.height(12.dp))
                 
-                val routeLocation = remember(route.latitude, route.longitude) {
-                    val latLng = LatLng(route.latitude, route.longitude)
+                val routeLocation = remember(currentRouteData.latitude, currentRouteData.longitude) {
+                    val latLng = LatLng(currentRouteData.latitude, currentRouteData.longitude)
                     Log.d("RouteDetail", "Route coordinates: $latLng")
                     latLng
                 }
@@ -296,7 +323,7 @@ fun RouteDetailScreen(
                 }
 
                 // Ajustar cámara cuando los datos estén listos o para seguimiento
-                LaunchedEffect(route.id, polylinePoints, route.latitude, isTracking, currentUserLocation) {
+                LaunchedEffect(currentRouteData.id, polylinePoints, currentRouteData.latitude, isTracking, currentUserLocation) {
                     if (isTracking && currentUserLocation != null) {
                         Log.d("RouteDetail", "Following user: $currentUserLocation")
                         cameraPositionState.animate(
@@ -308,7 +335,7 @@ fun RouteDetailScreen(
                             cameraPositionState.animate(
                                 CameraUpdateFactory.newLatLngZoom(polylinePoints[0], 15f)
                             )
-                        } else if (route.latitude != 0.0) {
+                        } else if (currentRouteData.latitude != 0.0) {
                             Log.d("RouteDetail", "Centering on marker location")
                             cameraPositionState.animate(
                                 CameraUpdateFactory.newLatLngZoom(routeLocation, 15f)
@@ -348,8 +375,8 @@ fun RouteDetailScreen(
                     ) {
                         Marker(
                             state = rememberMarkerState(position = routeLocation),
-                            title = route.title,
-                            snippet = route.companyName
+                            title = currentRouteData.title,
+                            snippet = currentRouteData.companyName
                         )
 
                         if (polylinePoints.isNotEmpty()) {
