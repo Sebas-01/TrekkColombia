@@ -1,0 +1,41 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="GPS Visualizer Sandbox https://www.gpsvisualizer.com/draw/" xmlns="http://www.topografix.com/GPX/1/1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd">
+	<wpt lat="6.2754994" lon="-75.5869246">
+		<name>piscina pascual</name>
+	</wpt>
+	<trk>
+		<name></name>
+		<desc>Length: 0.206 km (0.128 mi)</desc>
+		<trkseg>
+			<trkpt lat="6.2757768" lon="-75.5873644"></trkpt>
+			<trkpt lat="6.2757928" lon="-75.5873215"></trkpt>
+			<trkpt lat="6.2757928" lon="-75.5872893"></trkpt>
+			<trkpt lat="6.2757928" lon="-75.5872411"></trkpt>
+			<trkpt lat="6.2757715" lon="-75.5871767"></trkpt>
+			<trkpt lat="6.2757555" lon="-75.5871284"></trkpt>
+			<trkpt lat="6.2757502" lon="-75.5870855"></trkpt>
+			<trkpt lat="6.2757342" lon="-75.5870265"></trkpt>
+			<trkpt lat="6.2757288" lon="-75.5869782"></trkpt>
+			<trkpt lat="6.2757075" lon="-75.5869353"></trkpt>
+			<trkpt lat="6.2756221" lon="-75.5869138"></trkpt>
+			<trkpt lat="6.2755421" lon="-75.5869085"></trkpt>
+			<trkpt lat="6.2754781" lon="-75.5869085"></trkpt>
+			<trkpt lat="6.2754087" lon="-75.5869085"></trkpt>
+			<trkpt lat="6.2753554" lon="-75.5869085"></trkpt>
+			<trkpt lat="6.2752913" lon="-75.5868924"></trkpt>
+			<trkpt lat="6.2752166" lon="-75.5868441"></trkpt>
+			<trkpt lat="6.2750939" lon="-75.5868065"></trkpt>
+			<trkpt lat="6.2750192" lon="-75.5868226"></trkpt>
+			<trkpt lat="6.2749552" lon="-75.586828"></trkpt>
+			<trkpt lat="6.2748378" lon="-75.5868334"></trkpt>
+			<trkpt lat="6.2747098" lon="-75.5868387"></trkpt>
+			<trkpt lat="6.2746671" lon="-75.5868387"></trkpt>
+			<trkpt lat="6.2746031" lon="-75.5868602"></trkpt>
+			<trkpt lat="6.2745444" lon="-75.5868602"></trkpt>
+			<trkpt lat="6.2744911" lon="-75.5868763"></trkpt>
+			<trkpt lat="6.2744217" lon="-75.586887"></trkpt>
+			<trkpt lat="6.2744057" lon="-75.5868387"></trkpt>
+			<trkpt lat="6.2744004" lon="-75.5867958"></trkpt>
+		</trkseg>
+	</trk>
+</gpx>
