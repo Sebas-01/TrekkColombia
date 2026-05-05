@@ -7,6 +7,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Person
@@ -29,11 +30,14 @@ import com.trekking.app.api.UpdateRequest
 import com.trekking.app.api.Usuario
 import kotlinx.coroutines.launch
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileUpdateScreen(
     user: Usuario?,
     onBack: () -> Unit,
-    onUpdateSuccess: (Usuario) -> Unit
+    onUpdateSuccess: (Usuario) -> Unit,
+    isDarkMode: Boolean = false,
+    onToggleDarkMode: () -> Unit = {}
 ) {
     if (user == null) {
         onBack()
@@ -49,228 +53,286 @@ fun ProfileUpdateScreen(
     var successMessage by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
 
-    Box(modifier = Modifier.fillMaxSize()) {
-        // Fondo con Imagen de Naturaleza (Nítido)
-        AsyncImage(
-            model = "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&q=80&w=1000",
-            contentDescription = null,
-            modifier = Modifier.fillMaxSize(),
-            contentScale = ContentScale.Crop
-        )
-        
-        // Overlay oscuro para legibilidad
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(Color.Black.copy(alpha = 0.5f))
-        )
-
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            // Inicial del usuario como "logo" personalizado
-            Box(
-                modifier = Modifier
-                    .size(70.dp)
-                    .clip(CircleShape)
-                    .background(Color.White.copy(alpha = 0.9f)),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    user.nombre.take(1).uppercase(), 
-                    fontSize = 36.sp, 
-                    fontWeight = FontWeight.Black, 
-                    color = Color(0xFF192f6a)
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Mi Perfil", fontWeight = FontWeight.Bold) },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Atrás"
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    titleContentColor = MaterialTheme.colorScheme.onSurface,
+                    navigationIconContentColor = MaterialTheme.colorScheme.onSurface
                 )
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Text(
-                text = "Mi Perfil",
-                fontSize = 32.sp,
-                fontWeight = FontWeight.ExtraBold,
-                color = Color.White
             )
-            Text(
-                text = "Mantén tus datos actualizados",
-                fontSize = 16.sp,
-                color = Color.White.copy(alpha = 0.8f)
+        }
+    ) { padding ->
+        Box(modifier = Modifier.fillMaxSize().padding(padding)) {
+            // Fondo con Imagen de Naturaleza (Nítido)
+            AsyncImage(
+                model = "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&q=80&w=1000",
+                contentDescription = null,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop
             )
             
-            Spacer(modifier = Modifier.height(32.dp))
+            // Overlay oscuro para legibilidad
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.5f))
+            )
 
-            // Contenedor con efecto Blur sin afectar el texto
-            Box(modifier = Modifier.fillMaxWidth()) {
-                // Capa de fondo con Blur (el "cristal")
-                Surface(
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                // Inicial del usuario como "logo" personalizado
+                Box(
                     modifier = Modifier
-                        .matchParentSize()
-                        .blur(25.dp),
-                    shape = RoundedCornerShape(32.dp),
-                    color = Color.White.copy(alpha = 0.2f),
-                    shadowElevation = 8.dp
-                ) {}
+                        .size(70.dp)
+                        .clip(CircleShape)
+                        .background(Color.White.copy(alpha = 0.9f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        user.nombre.take(1).uppercase(), 
+                        fontSize = 36.sp, 
+                        fontWeight = FontWeight.Black, 
+                        color = Color(0xFF192f6a)
+                    )
+                }
 
-                // Capa de contenido (Nítida)
-                Column(modifier = Modifier.padding(28.dp)) {
-                    OutlinedTextField(
-                        value = nombre,
-                        onValueChange = { nombre = it },
-                        label = { Text("Nombre Completo") },
-                        leadingIcon = { Icon(Icons.Default.Person, contentDescription = null) },
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(16.dp),
-                        singleLine = true,
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedContainerColor = Color.White,
-                            unfocusedContainerColor = Color.White,
-                            focusedBorderColor = Color(0xFF192f6a),
-                            unfocusedBorderColor = Color.Gray.copy(alpha = 0.4f)
-                        )
-                    )
-                    
-                    Spacer(modifier = Modifier.height(16.dp))
-                    
-                    OutlinedTextField(
-                        value = telefono,
-                        onValueChange = { telefono = it },
-                        label = { Text("Teléfono") },
-                        leadingIcon = { Icon(Icons.Default.Phone, contentDescription = null) },
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(16.dp),
-                        singleLine = true,
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedContainerColor = Color.White,
-                            unfocusedContainerColor = Color.White,
-                            focusedBorderColor = Color(0xFF192f6a),
-                            unfocusedBorderColor = Color.Gray.copy(alpha = 0.4f)
-                        )
-                    )
-                    
-                    Spacer(modifier = Modifier.height(16.dp))
-                    
-                    OutlinedTextField(
-                        value = email,
-                        onValueChange = { email = it },
-                        label = { Text("Correo Electrónico") },
-                        leadingIcon = { Icon(Icons.Default.Email, contentDescription = null) },
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(16.dp),
-                        singleLine = true,
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedContainerColor = Color.White,
-                            unfocusedContainerColor = Color.White,
-                            focusedBorderColor = Color(0xFF192f6a),
-                            unfocusedBorderColor = Color.Gray.copy(alpha = 0.4f)
-                        )
-                    )
-                    
-                    Spacer(modifier = Modifier.height(16.dp))
-                    
-                    OutlinedTextField(
-                        value = password,
-                        onValueChange = { password = it },
-                        label = { Text("Nueva Contraseña (opcional)") },
-                        leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null) },
-                        visualTransformation = PasswordVisualTransformation(),
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(16.dp),
-                        singleLine = true,
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedContainerColor = Color.White,
-                            unfocusedContainerColor = Color.White,
-                            focusedBorderColor = Color(0xFF192f6a),
-                            unfocusedBorderColor = Color.Gray.copy(alpha = 0.4f)
-                        )
-                    )
-                    
-                    Spacer(modifier = Modifier.height(32.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
-                    Button(
-                        onClick = {
-                            scope.launch {
-                                isLoading = true
-                                errorMessage = null
-                                successMessage = null
-                                try {
-                                    val request = UpdateRequest(
-                                        nombre = nombre,
-                                        correo = email,
-                                        telefono = telefono.ifEmpty { null },
-                                        password = if (password.isEmpty()) null else password,
-                                        foto = user.foto
-                                    )
-                                    val response = RetrofitClient.instance.updateUsuario(user.idUsuario, request)
-                                    if (response.isSuccessful) {
-                                        successMessage = "Datos actualizados correctamente"
-                                        onUpdateSuccess(
-                                            Usuario(
-                                                user.idUsuario,
-                                                nombre,
-                                                telefono.ifEmpty { null },
-                                                email,
-                                                user.foto,
-                                                user.fechaCreacion
-                                            )
+                Text(
+                    text = "Mi Perfil",
+                    fontSize = 32.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = Color.White
+                )
+                Text(
+                    text = "Mantén tus datos actualizados",
+                    fontSize = 16.sp,
+                    color = Color.White.copy(alpha = 0.8f)
+                )
+                
+                Spacer(modifier = Modifier.height(32.dp))
+
+                // Contenedor con efecto Blur sin afectar el texto
+                Box(modifier = Modifier.fillMaxWidth()) {
+                    // Capa de fondo con Blur (el "cristal")
+                    Surface(
+                        modifier = Modifier
+                            .matchParentSize()
+                            .blur(25.dp),
+                        shape = RoundedCornerShape(32.dp),
+                        color = Color.White.copy(alpha = 0.2f),
+                        shadowElevation = 8.dp
+                    ) {}
+
+                    // Capa de contenido (Nítida)
+                    Column(modifier = Modifier.padding(28.dp)) {
+                        Column(modifier = Modifier.fillMaxWidth()) {
+                            Text("Nombre Completo", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(start = 4.dp, bottom = 4.dp))
+                            OutlinedTextField(
+                                value = nombre,
+                                onValueChange = { nombre = it },
+                                placeholder = { Text("Tu nombre", color = Color.Gray.copy(alpha = 0.5f)) },
+                                leadingIcon = { Icon(imageVector = Icons.Default.Person, contentDescription = null, tint = Color(0xFF192f6a)) },
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(16.dp),
+                                singleLine = true,
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedContainerColor = Color.White,
+                                    unfocusedContainerColor = Color.White,
+                                    focusedBorderColor = Color.White,
+                                    unfocusedBorderColor = Color.Transparent
+                                )
+                            )
+                        }
+                        
+                        Spacer(modifier = Modifier.height(16.dp))
+                        
+                        Column(modifier = Modifier.fillMaxWidth()) {
+                            Text("Teléfono", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(start = 4.dp, bottom = 4.dp))
+                            OutlinedTextField(
+                                value = telefono,
+                                onValueChange = { telefono = it },
+                                placeholder = { Text("Ej: +57 300...", color = Color.Gray.copy(alpha = 0.5f)) },
+                                leadingIcon = { Icon(imageVector = Icons.Default.Phone, contentDescription = null, tint = Color(0xFF192f6a)) },
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(16.dp),
+                                singleLine = true,
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedContainerColor = Color.White,
+                                    unfocusedContainerColor = Color.White,
+                                    focusedBorderColor = Color.White,
+                                    unfocusedBorderColor = Color.Transparent
+                                )
+                            )
+                        }
+                        
+                        Spacer(modifier = Modifier.height(16.dp))
+                        
+                        Column(modifier = Modifier.fillMaxWidth()) {
+                            Text("Correo Electrónico", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(start = 4.dp, bottom = 4.dp))
+                            OutlinedTextField(
+                                value = email,
+                                onValueChange = { email = it },
+                                placeholder = { Text("ejemplo@correo.com", color = Color.Gray.copy(alpha = 0.5f)) },
+                                leadingIcon = { Icon(imageVector = Icons.Default.Email, contentDescription = null, tint = Color(0xFF192f6a)) },
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(16.dp),
+                                singleLine = true,
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedContainerColor = Color.White,
+                                    unfocusedContainerColor = Color.White,
+                                    focusedBorderColor = Color.White,
+                                    unfocusedBorderColor = Color.Transparent
+                                )
+                            )
+                        }
+                        
+                        Spacer(modifier = Modifier.height(16.dp))
+                        
+                        Column(modifier = Modifier.fillMaxWidth()) {
+                            Text("Nueva Contraseña (opcional)", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(start = 4.dp, bottom = 4.dp))
+                            OutlinedTextField(
+                                value = password,
+                                onValueChange = { password = it },
+                                placeholder = { Text("Dejar en blanco para no cambiar", color = Color.Gray.copy(alpha = 0.5f)) },
+                                leadingIcon = { Icon(imageVector = Icons.Default.Lock, contentDescription = null, tint = Color(0xFF192f6a)) },
+                                visualTransformation = PasswordVisualTransformation(),
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(16.dp),
+                                singleLine = true,
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedContainerColor = Color.White,
+                                    unfocusedContainerColor = Color.White,
+                                    focusedBorderColor = Color.White,
+                                    unfocusedBorderColor = Color.Transparent
+                                )
+                            )
+                        }
+                        
+                        Spacer(modifier = Modifier.height(32.dp))
+
+                        Button(
+                            onClick = {
+                                scope.launch {
+                                    isLoading = true
+                                    errorMessage = null
+                                    successMessage = null
+                                    try {
+                                        val request = UpdateRequest(
+                                            nombre = nombre,
+                                            correo = email,
+                                            telefono = telefono.ifEmpty { null },
+                                            password = if (password.isEmpty()) null else password,
+                                            foto = user.foto
                                         )
-                                    } else {
-                                        errorMessage = "Error al actualizar: código ${response.code()}"
+                                        val response = RetrofitClient.instance.updateUsuario(user.idUsuario, request)
+                                        if (response.isSuccessful) {
+                                            successMessage = "Datos actualizados correctamente"
+                                            onUpdateSuccess(
+                                                Usuario(
+                                                    user.idUsuario,
+                                                    nombre,
+                                                    telefono.ifEmpty { null },
+                                                    email,
+                                                    user.foto,
+                                                    user.fechaCreacion
+                                                )
+                                            )
+                                        } else {
+                                            errorMessage = "Error al actualizar: código ${response.code()}"
+                                        }
+                                    } catch (e: Exception) {
+                                        errorMessage = "Error de conexión: ${e.message}"
+                                    } finally {
+                                        isLoading = false
                                     }
-                                } catch (e: Exception) {
-                                    errorMessage = "Error de conexión: ${e.message}"
-                                } finally {
-                                    isLoading = false
                                 }
+                            },
+                            modifier = Modifier.fillMaxWidth().height(56.dp),
+                            shape = RoundedCornerShape(16.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF192f6a)),
+                            enabled = !isLoading
+                        ) {
+                            if (isLoading) {
+                                CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
+                            } else {
+                                Text("ACTUALIZAR", fontWeight = FontWeight.Bold, fontSize = 16.sp)
                             }
-                        },
-                        modifier = Modifier.fillMaxWidth().height(56.dp),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF192f6a)),
-                        enabled = !isLoading
-                    ) {
-                        if (isLoading) {
-                            CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
-                        } else {
-                            Text("ACTUALIZAR", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                        }
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        errorMessage?.let {
+                            Text(
+                                text = it,
+                                color = Color(0xFFD32F2F),
+                                fontSize = 14.sp,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                        }
+                        successMessage?.let {
+                            Text(
+                                text = it,
+                                color = Color(0xFF388E3C),
+                                fontSize = 14.sp,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                        }
+                        
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        // Toggle Modo Oscuro
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text("Modo Oscuro", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+                            Switch(
+                                checked = isDarkMode,
+                                onCheckedChange = { onToggleDarkMode() },
+                                colors = SwitchDefaults.colors(
+                                    checkedThumbColor = Color.White,
+                                    checkedTrackColor = Color(0xFF4CAF50),
+                                    uncheckedThumbColor = Color.LightGray,
+                                    uncheckedTrackColor = Color.White.copy(alpha = 0.3f)
+                                )
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        TextButton(
+                            onClick = onBack,
+                            modifier = Modifier.align(Alignment.CenterHorizontally)
+                        ) {
+                            Text("CANCELAR", color = Color.Gray, fontWeight = FontWeight.Bold)
                         }
                     }
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    errorMessage?.let {
-                        Text(
-                            text = it,
-                            color = Color(0xFFD32F2F),
-                            fontSize = 14.sp,
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                    }
-                    successMessage?.let {
-                        Text(
-                            text = it,
-                            color = Color(0xFF388E3C),
-                            fontSize = 14.sp,
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                    }
-
-                    TextButton(
-                        onClick = onBack,
-                        modifier = Modifier.align(Alignment.CenterHorizontally)
-                    ) {
-                        Text("CANCELAR", color = Color.Gray, fontWeight = FontWeight.Bold)
-                    }
                 }
+                Spacer(modifier = Modifier.height(24.dp))
             }
-            Spacer(modifier = Modifier.height(24.dp))
         }
     }
 }

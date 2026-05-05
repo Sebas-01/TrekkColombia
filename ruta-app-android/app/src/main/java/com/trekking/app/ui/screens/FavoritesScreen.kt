@@ -64,7 +64,7 @@ fun FavoritesScreen(
     }
 
     Scaffold(
-        containerColor = Color(0xFFF9FBFC),
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
                 title = { Text("Mis Favoritos", fontWeight = FontWeight.Bold) },
@@ -74,7 +74,9 @@ fun FavoritesScreen(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.White
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    titleContentColor = MaterialTheme.colorScheme.onSurface,
+                    navigationIconContentColor = MaterialTheme.colorScheme.onSurface
                 )
             )
         }

@@ -11,6 +11,12 @@ const port = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
+// Middleware de log global
+app.use((req, res, next) => {
+  console.log(`[${new Date().toLocaleTimeString()}] ${req.method} ${req.url}`);
+  next();
+});
+
 // --- Archivos estáticos ---
 // Imágenes de rutas: GET /imagenes/nombre-archivo.jpg
 // Coordenadas GPX:   GET /rutas/nombre-ruta.gpx
@@ -34,7 +40,7 @@ const initDb = async () => {
     CREATE TABLE IF NOT EXISTS empresas (
       id SERIAL PRIMARY KEY,
       nombre VARCHAR(255) NOT NULL,
-      identificacion BIGINT NOT NULL
+      identificacion VARCHAR(50) NOT NULL
     );
 
     CREATE TABLE IF NOT EXISTS rutas (
@@ -49,7 +55,8 @@ const initDb = async () => {
       guideName VARCHAR(255),
       latitude DOUBLE PRECISION DEFAULT 0.0,
       longitude DOUBLE PRECISION DEFAULT 0.0,
-      geom GEOMETRY(LineString, 4326)
+      geom GEOMETRY(LineString, 4326),
+      recomendaciones TEXT
     );
 
     CREATE TABLE IF NOT EXISTS guias (
@@ -81,6 +88,24 @@ const initDb = async () => {
     }
 
     // --- Migración de Empresas ---
+    const empresasColumns = await db.query("SELECT column_name FROM information_schema.columns WHERE table_name = 'empresas'");
+    const empresasColumnNames = empresasColumns.rows.map(c => c.column_name);
+
+    if (!empresasColumnNames.includes('descripcion')) {
+      await db.query("ALTER TABLE empresas ADD COLUMN descripcion TEXT");
+      console.log('Columna "descripcion" añadida a empresas.');
+    }
+    if (!empresasColumnNames.includes('contacto')) {
+      await db.query("ALTER TABLE empresas ADD COLUMN contacto VARCHAR(255)");
+    }
+    if (!empresasColumnNames.includes('logo_url')) {
+      await db.query("ALTER TABLE empresas ADD COLUMN logo_url TEXT");
+    }
+    if (!empresasColumnNames.includes('rnt')) {
+      await db.query("ALTER TABLE empresas ADD COLUMN rnt VARCHAR(50)");
+    }
+
+    // --- Migración de Rutas ---
     const routesColumns = await db.query("SELECT column_name FROM information_schema.columns WHERE table_name = 'rutas'");
     const routesColumnNames = routesColumns.rows.map(c => c.column_name);
 
@@ -125,6 +150,11 @@ const initDb = async () => {
       console.log('Columna "geom" añadida a rutas.');
     }
 
+    if (!routesColumnNames.includes('recomendaciones')) {
+      await db.query("ALTER TABLE rutas ADD COLUMN recomendaciones TEXT");
+      console.log('Columna "recomendaciones" añadida a rutas.');
+    }
+
     // --- Migración: Tabla guias ---
     const guiasExists = await db.query(
       "SELECT to_regclass('public.guias') as exists"
@@ -138,28 +168,25 @@ const initDb = async () => {
     // Seed empresas y rutas si está vacío
     const empresasCheck = await db.query("SELECT count(*) FROM empresas");
     if (parseInt(empresasCheck.rows[0].count) === 0) {
-      const seedEmpresas = await db.query(`
-        INSERT INTO empresas (nombre, identificacion) VALUES 
-        ('Inca Trails Ltd.', 900123456),
-        ('Andes Adventures', 900654321),
-        ('Sierra Treks', 800111222),
-        ('Páramo Tours', 800333444),
-        ('Desert Guides', 700555666),
-        ('Quindío Nature', 700777888)
-        RETURNING id, nombre
-      `);
+      const seedEmpresasQuery = `
+      INSERT INTO empresas (nombre, identificacion, descripcion, contacto, logo_url, rnt) VALUES
+      ('Andes Adventure', 900123456, 'Expertos en alta montaña y expediciones en los Andes colombianos.', '+57 310 123 4567', 'https://images.unsplash.com/photo-1599305090748-36656ca77449?q=80&w=200', 'RNT 12345'),
+      ('Trekking Colombia', 900987654, 'Líderes en senderismo ecológico y avistamiento de aves.', '+57 315 987 6543', 'https://images.unsplash.com/photo-1599305090748-36656ca77449?q=80&w=200', 'RNT 67890'),
+      ('Explora Sierra', 900555444, 'Conectamos aventureros con la cultura y naturaleza de la Sierra Nevada.', '+57 320 555 4444', 'https://images.unsplash.com/photo-1599305090748-36656ca77449?q=80&w=200', 'RNT 11223')
+      ON CONFLICT DO NOTHING;
+    `;
+    await db.query(seedEmpresasQuery);
       
+      const seedEmpresas = await db.query("SELECT id, nombre FROM empresas");
       const empMap = {};
       seedEmpresas.rows.forEach(e => empMap[e.nombre] = e.id);
 
       const seedRoutesQuery = `
-        INSERT INTO rutas (title, imageUrl, description, height, id_empresa, difficulty, duration, guideName) VALUES
-        ('Camino del Inca', 'https://picsum.photos/seed/1/400/600', 'Una ruta milenaria que atraviesa los Andes hasta llegar a Machu Picchu.', 300, ${empMap['Inca Trails Ltd.']}, 'Alta', '4 días', 'Juan Pérez'),
-        ('Nevado del Cocuy', 'https://picsum.photos/seed/2/400/400', 'Nieve en el trópico colombiano. Siente la magia de los glaciares.', 200, ${empMap['Andes Adventures']}, 'Muy Alta', '2 días', 'María García'),
-        ('Ciudad Perdida', 'https://picsum.photos/seed/3/400/700', 'Tesoro arqueológico en la Sierra Nevada de Santa Marta.', 350, ${empMap['Sierra Treks']}, 'Media', '5 días', 'Carlos Ruiz'),
-        ('Páramo de Santurbán', 'https://picsum.photos/seed/4/400/500', 'Tierra de frailejones y nacimientos de agua cristalina.', 250, ${empMap['Páramo Tours']}, 'Media', '1 día', 'Elena Blanco'),
-        ('Desierto de la Tatacoa', 'https://picsum.photos/seed/5/400/600', 'Un laberinto de tierra roja bajo cielos estrellados.', 280, ${empMap['Desert Guides']}, 'Baja', '1 día', 'Felipe Mora'),
-        ('Valle del Cocora', 'https://picsum.photos/seed/6/400/450', 'Hogar de la palma de cera, árbol nacional de Colombia.', 220, ${empMap['Quindío Nature']}, 'Media', '6 horas', 'Sofía Vargas');
+        INSERT INTO rutas (title, imageUrl, description, height, id_empresa, difficulty, duration, guideName, recomendaciones) VALUES
+        ('Camino del Inca', 'https://picsum.photos/seed/1/400/600', 'Una ruta milenaria que atraviesa los Andes hasta llegar a Machu Picchu.', 300, ${empMap['Andes Adventure']}, 'Alta', '4 días', 'Juan Pérez', 'Llevar botas de trekking impermeables, ropa térmica para la noche y protector solar de alta protección.'),
+        ('Nevado del Cocuy', 'https://picsum.photos/seed/2/400/400', 'Nieve en el trópico colombiano. Siente la magia de los glaciares.', 200, ${empMap['Andes Adventure']}, 'Muy Alta', '2 días', 'María García', 'Es obligatorio el uso de crampones y piolet. Recomendamos aclimatación previa en altitud.'),
+        ('Ciudad Perdida', 'https://picsum.photos/seed/3/400/700', 'Tesoro arqueológico en la Sierra Nevada de Santa Marta.', 350, ${empMap['Explora Sierra']}, 'Media', '5 días', 'Carlos Ruiz', 'Mucha hidratación, repelente de insectos fuerte y calzado con buen agarre para el barro.'),
+        ('Páramo de Santurbán', 'https://picsum.photos/seed/4/400/500', 'Tierra de frailejones y nacimientos de agua cristalina.', 250, ${empMap['Trekking Colombia']}, 'Media', '1 día', 'Elena Blanco', 'Llevar chaqueta rompevientos, guantes y no tocar los frailejones.');
       `;
       await db.query(seedRoutesQuery);
       console.log('Empresas y Rutas iniciales creadas.');
@@ -260,6 +287,7 @@ app.get('/rutas', async (req, res) => {
     const idUsuario = req.query.idUsuario;
     let query = `
       SELECT r.*, e.nombre as companyName, e.identificacion as companyIdentification,
+      e.logo_url as companyLogo, e.descripcion as companyDescription,
       ST_AsGeoJSON(r.geom) as geojson
       FROM rutas r
       LEFT JOIN empresas e ON r.id_empresa = e.id
@@ -269,6 +297,7 @@ app.get('/rutas', async (req, res) => {
     if (idUsuario) {
       query = `
         SELECT r.*, e.nombre as companyName, e.identificacion as companyIdentification,
+        e.logo_url as companyLogo, e.descripcion as companyDescription,
         ST_AsGeoJSON(r.geom) as geojson,
         CASE WHEN f.idruta IS NOT NULL THEN TRUE ELSE FALSE END as isFavorite
         FROM rutas r
@@ -291,7 +320,7 @@ app.post('/rutas', async (req, res) => {
   const { title, gpx, id_empresa } = req.body;
   console.log(`Título: ${title}, ID Empresa: ${id_empresa}, Longitud GPX: ${gpx ? gpx.length : 0}`);
   
-  const { imageUrl, description, height, difficulty, duration, guideName, latitude, longitude } = req.body;
+  const { imageUrl, description, height, difficulty, duration, guideName, latitude, longitude, recomendaciones } = req.body;
   
   try {
     let geomWkt = null;
@@ -312,13 +341,14 @@ app.post('/rutas', async (req, res) => {
     }
 
     const query = `
-      INSERT INTO rutas (title, imageUrl, description, height, id_empresa, difficulty, duration, guideName, latitude, longitude, geom)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, ${geomWkt ? 'ST_GeomFromText($11, 4326)' : 'NULL'})
+      INSERT INTO rutas (title, imageUrl, description, height, id_empresa, difficulty, duration, guideName, latitude, longitude, geom, recomendaciones)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, ${geomWkt ? 'ST_GeomFromText($11, 4326)' : 'NULL'}, ${geomWkt ? '$12' : '$11'})
       RETURNING id
     `;
     
     const params = [title, imageUrl, description, height, id_empresa, difficulty, duration, guideName, latitude, longitude];
     if (geomWkt) params.push(geomWkt);
+    params.push(recomendaciones);
 
     const { rows } = await db.query(query, params);
     res.status(201).json({ id: rows[0].id, message: 'Ruta creada correctamente' });
@@ -337,6 +367,21 @@ app.get('/empresas', async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Error al obtener empresas' });
+  }
+});
+
+app.get('/empresas/:id', async (req, res) => {
+  const { id } = req.params;
+  console.log(`Petición GET /empresas/${id}`);
+  try {
+    const result = await db.query('SELECT * FROM empresas WHERE id = $1', [parseInt(id)]);
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Empresa no encontrada' });
+    }
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Error al obtener empresa' });
   }
 });
 
@@ -463,6 +508,7 @@ app.get('/favoritos/:idUsuario', async (req, res) => {
   try {
     const query = `
       SELECT r.*, e.nombre as companyName, e.identificacion as companyIdentification,
+      e.logo_url as companyLogo, e.descripcion as companyDescription,
       ST_AsGeoJSON(r.geom) as geojson,
       TRUE as isFavorite
       FROM rutas r

@@ -21,6 +21,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
@@ -36,18 +37,19 @@ import com.google.accompanist.permissions.rememberMultiplePermissionsState
 import org.json.JSONObject
 import com.google.android.gms.location.*
 import kotlinx.coroutines.awaitCancellation
-import kotlinx.coroutines.delay
 import com.trekking.app.data.local.AppDatabase
 import com.trekking.app.data.local.toTrekkingRoute
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.Dispatchers
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalPermissionsApi::class)
 @Composable
 fun RouteDetailScreen(
     route: TrekkingRoute?,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    onCompanyClick: (Int) -> Unit = {}
 ) {
     val context = androidx.compose.ui.platform.LocalContext.current
     val db = remember { AppDatabase.getDatabase(context) }
@@ -57,9 +59,11 @@ fun RouteDetailScreen(
     val scrollState = rememberScrollState()
     val scope = rememberCoroutineScope()
     var isTracking by remember { mutableStateOf(false) }
-    var totalDistanceMeters by remember { mutableStateOf(0f) }
+    var totalDistanceMeters by remember { mutableFloatStateOf(0f) }
     var previousTrackingLocation by remember { mutableStateOf<LatLng?>(null) }
     var isOffRoute by remember { mutableStateOf(false) }
+    var showRecommendations by remember { mutableStateOf(false) }
+    var showCompanyPopup by remember { mutableStateOf(false) }
 
     // Intentar recuperar datos locales si faltan datos críticos (ej: geojson)
     LaunchedEffect(route?.id) {
@@ -194,11 +198,13 @@ fun RouteDetailScreen(
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Regresar")
+                        Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Regresar")
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.White.copy(alpha = 0.9f)
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    titleContentColor = MaterialTheme.colorScheme.onSurface,
+                    navigationIconContentColor = MaterialTheme.colorScheme.onSurface
                 )
             )
         }
@@ -208,7 +214,7 @@ fun RouteDetailScreen(
                 .padding(padding)
                 .fillMaxSize()
                 .verticalScroll(scrollState)
-                .background(Color(0xFFF9FBFC))
+                .background(MaterialTheme.colorScheme.background)
         ) {
             // Hero Image
             AsyncImage(
@@ -226,18 +232,21 @@ fun RouteDetailScreen(
                     text = currentRouteData.title,
                     fontSize = 28.sp,
                     fontWeight = FontWeight.ExtraBold,
-                    color = Color(0xFF1A2b4c)
+                    color = MaterialTheme.colorScheme.onBackground
                 )
                 Text(
                     text = "por ${currentRouteData.companyName}",
                     fontSize = 16.sp,
                     color = Color(0xFF3b5998),
-                    fontWeight = FontWeight.SemiBold
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.clickable { 
+                        currentRouteData.companyId?.let { onCompanyClick(it) } 
+                    }
                 )
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // Stats Grid
+                // Grid de Estadísticas
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -247,7 +256,7 @@ fun RouteDetailScreen(
                         label = "Dificultad",
                         value = currentRouteData.difficulty,
                         modifier = Modifier.weight(1f),
-                        color = when(currentRouteData.difficulty.lowercase()) {
+                        color = when(currentRouteData.difficulty.lowercase(Locale.ROOT)) {
                             "baja" -> Color(0xFF4CAF50)
                             "media" -> Color(0xFFFFC107)
                             else -> Color(0xFFF44336)
@@ -262,14 +271,44 @@ fun RouteDetailScreen(
                     )
                 }
 
+                Spacer(modifier = Modifier.height(24.dp))
+
+                // Botones de Acción (Recomendaciones y Empresa)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Button(
+                        onClick = { showRecommendations = true },
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFBC02D)),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Icon(imageVector = Icons.Default.Star, contentDescription = null, tint = Color.White)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Recomendaciones", color = Color.White, fontWeight = FontWeight.Bold)
+                    }
+                    
+                    Button(
+                        onClick = { showCompanyPopup = true },
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF3b5998)),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Icon(imageVector = Icons.Default.Home, contentDescription = null, tint = Color.White)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Operadora", color = Color.White, fontWeight = FontWeight.Bold)
+                    }
+                }
+
                 Spacer(modifier = Modifier.height(32.dp))
 
-                // Description
+                // Descripción
                 Text(
                     text = "Sobre esta aventura",
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF1A2b4c)
+                    color = MaterialTheme.colorScheme.onBackground
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
@@ -279,7 +318,7 @@ fun RouteDetailScreen(
                     color = Color(0xFF334155)
                 )
 
-                Spacer(modifier = Modifier.height(40.dp))
+                Spacer(modifier = Modifier.height(32.dp))
 
                 // Mapa Interactivo
                 Row(
@@ -291,7 +330,7 @@ fun RouteDetailScreen(
                         text = "Ruta en el Mapa",
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF1A2b4c)
+                        color = MaterialTheme.colorScheme.onBackground
                     )
                     if (locationPermissionsState.allPermissionsGranted) {
                         Surface(
@@ -467,7 +506,7 @@ fun RouteDetailScreen(
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
                                         Icon(
-                                            Icons.Default.Warning,
+                                            imageVector = Icons.Default.Warning,
                                             contentDescription = null,
                                             tint = Color.Yellow,
                                             modifier = Modifier.size(14.dp)
@@ -504,13 +543,101 @@ fun RouteDetailScreen(
                             .size(40.dp)
                             .border(1.dp, Color(0xFFE2E8F0), CircleShape)
                     ) {
-                        Icon(Icons.Default.LocationOn, contentDescription = "Centrar Ruta", tint = Color(0xFF3b5998))
+                        Icon(imageVector = Icons.Default.LocationOn, contentDescription = "Centrar Ruta", tint = Color(0xFF3b5998))
                     }
                 }
                 
                 Spacer(modifier = Modifier.height(40.dp))
             }
         }
+    }
+
+    // --- Ventana Emergente de Recomendaciones ---
+    if (showRecommendations) {
+        AlertDialog(
+            onDismissRequest = { showRecommendations = false },
+            title = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(imageVector = Icons.Default.Info, contentDescription = null, tint = Color(0xFFFBC02D))
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Text("Recomendaciones", fontWeight = FontWeight.Bold)
+                }
+            },
+            text = {
+                Column {
+                    Text(
+                        text = currentRouteData.recomendaciones ?: "No hay recomendaciones específicas para esta ruta por ahora.",
+                        fontSize = 16.sp,
+                        lineHeight = 24.sp,
+                        color = Color(0xFF334155)
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showRecommendations = false }) {
+                    Text("Entendido", fontWeight = FontWeight.Bold, color = Color(0xFF3b5998))
+                }
+            },
+            shape = RoundedCornerShape(20.dp),
+            containerColor = Color.White
+        )
+    }
+
+    // --- Ventana Emergente de Información de la Empresa ---
+    if (showCompanyPopup) {
+        AlertDialog(
+            onDismissRequest = { showCompanyPopup = false },
+            title = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(imageVector = Icons.Default.Home, contentDescription = null, tint = Color(0xFF3b5998))
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Text("Sobre la Operadora", fontWeight = FontWeight.Bold)
+                }
+            },
+            text = {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    AsyncImage(
+                        model = currentRouteData.companyLogo ?: "https://via.placeholder.com/150",
+                        contentDescription = "Logo",
+                        modifier = Modifier
+                            .size(80.dp)
+                            .clip(CircleShape),
+                        contentScale = ContentScale.Crop
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = currentRouteData.companyName,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF1A2b4c),
+                        textAlign = TextAlign.Center
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = currentRouteData.companyDescription ?: "Esta empresa se dedica a brindar las mejores experiencias de trekking.",
+                        fontSize = 15.sp,
+                        lineHeight = 22.sp,
+                        color = Color.DarkGray,
+                        textAlign = TextAlign.Center
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { 
+                    showCompanyPopup = false
+                    currentRouteData.companyId?.let { onCompanyClick(it) } 
+                }) {
+                    Text("VER PERFIL COMPLETO", fontWeight = FontWeight.Bold, color = Color(0xFF3b5998))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showCompanyPopup = false }) {
+                    Text("CERRAR", color = Color.Gray)
+                }
+            },
+            shape = RoundedCornerShape(20.dp),
+            containerColor = Color.White
+        )
     }
 }
 
@@ -521,7 +648,7 @@ fun formatDistance(meters: Float): String {
     return if (meters < 1000f) {
         "${meters.toInt()} m"
     } else {
-        String.format("%.2f km", meters / 1000f)
+        String.format(Locale.getDefault(), "%.2f km", meters / 1000f)
     }
 }
 
@@ -573,7 +700,7 @@ fun StatCard(
             modifier = Modifier.padding(12.dp),
             horizontalAlignment = Alignment.Start
         ) {
-            Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(20.dp))
+            Icon(imageVector = icon, contentDescription = null, tint = color, modifier = Modifier.size(20.dp))
             Spacer(modifier = Modifier.height(8.dp))
             Text(label, fontSize = 12.sp, color = Color.Gray)
             Text(value, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color(0xFF1A2b4c))

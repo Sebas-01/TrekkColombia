@@ -10,14 +10,19 @@ data class RutaEntity(
     val imageUrl: String,
     val description: String,
     val height: Int,
+    val companyId: Int?,
     val companyName: String,
+    val companyIdentification: String?,
     val difficulty: String,
     val duration: String,
     val guideName: String,
     val latitude: Double,
     val longitude: Double,
     val geoJson: String?,
-    val isFavorite: Boolean
+    val isFavorite: Boolean,
+    val recomendaciones: String?,
+    val companyLogo: String?,
+    val companyDescription: String?
 )
 
 fun RutaEntity.toTrekkingRoute(): com.trekking.app.api.TrekkingRoute {
@@ -27,15 +32,18 @@ fun RutaEntity.toTrekkingRoute(): com.trekking.app.api.TrekkingRoute {
         imageUrl = this.imageUrl,
         description = this.description,
         height = this.height,
-        companyId = null, // No guardamos el ID de empresa en la entidad simple por ahora
+        companyId = this.companyId, 
         companyName = this.companyName,
-        companyIdentification = null,
+        companyIdentification = this.companyIdentification,
         difficulty = this.difficulty,
         duration = this.duration,
         guideName = this.guideName,
         latitude = this.latitude,
         longitude = this.longitude,
         geoJson = this.geoJson,
-        isFavorite = this.isFavorite
+        isFavorite = this.isFavorite,
+        recomendaciones = this.recomendaciones,
+        companyLogo = this.companyLogo,
+        companyDescription = this.companyDescription
     )
 }

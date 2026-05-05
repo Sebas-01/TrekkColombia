@@ -35,6 +35,9 @@ interface ApiService {
     @GET("/guias")
     suspend fun getGuias(): Response<List<Guia>>
 
+    @GET("/empresas/{id}")
+    suspend fun getEmpresaById(@Path("id") id: Int): Response<Empresa>
+
     @GET("/guias/{id}")
     suspend fun getGuiaById(@Path("id") id: Int): Response<Guia>
 

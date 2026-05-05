@@ -10,9 +10,11 @@ import androidx.compose.foundation.lazy.staggeredgrid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
@@ -47,8 +49,9 @@ fun FeedScreen(
     onProfileClick: () -> Unit,
     onLogout: () -> Unit,
     onFavoritesClick: () -> Unit,
-    onUserListClick: () -> Unit,
-    onRouteClick: (TrekkingRoute) -> Unit
+    onRouteClick: (TrekkingRoute) -> Unit,
+    isDarkMode: Boolean = false,
+    onToggleDarkMode: () -> Unit = {}
 ) {
     var searchQuery by remember { mutableStateOf("") }
     var routes by remember { mutableStateOf<List<TrekkingRoute>>(emptyList()) }
@@ -74,14 +77,19 @@ fun FeedScreen(
                             imageUrl = it.imageUrl,
                             description = it.description,
                             height = it.height,
+                            companyId = it.companyId,
                             companyName = it.companyName,
+                            companyIdentification = it.companyIdentification,
                             difficulty = it.difficulty,
                             duration = it.duration,
                             guideName = it.guideName,
                             latitude = it.latitude,
                             longitude = it.longitude,
                             geoJson = it.geoJson,
-                            isFavorite = it.isFavorite
+                            isFavorite = it.isFavorite,
+                            recomendaciones = it.recomendaciones,
+                            companyLogo = it.companyLogo,
+                            companyDescription = it.companyDescription
                         )
                     }
                     db.rutaDao().deleteAllRutas()
@@ -132,11 +140,11 @@ fun FeedScreen(
     }
 
     Scaffold(
-        containerColor = Color(0xFFF9FBFC), // Fondo Pinterest-like
+        containerColor = MaterialTheme.colorScheme.background, 
         topBar = {
             Surface(
                 shadowElevation = 0.dp,
-                color = Color.White
+                color = MaterialTheme.colorScheme.surface
             ) {
                 Column(modifier = Modifier.padding(top = 8.dp)) {
                     Row(
@@ -173,25 +181,33 @@ fun FeedScreen(
                             leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, modifier = Modifier.size(20.dp)) },
                             shape = RoundedCornerShape(26.dp),
                             colors = OutlinedTextFieldDefaults.colors(
-                                focusedContainerColor = Color(0xFFE9E9E9),
-                                unfocusedContainerColor = Color(0xFFE9E9E9),
+                                focusedContainerColor = if (isDarkMode) Color(0xFF333333) else Color(0xFFE9E9E9),
+                                unfocusedContainerColor = if (isDarkMode) Color(0xFF333333) else Color(0xFFE9E9E9),
                                 focusedBorderColor = Color.Transparent,
-                                unfocusedBorderColor = Color.Transparent
+                                unfocusedBorderColor = Color.Transparent,
+                                focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                                unfocusedTextColor = MaterialTheme.colorScheme.onSurface
                             ),
                             singleLine = true
                         )
 
                         // Iconos de acción
                         IconButton(onClick = onFavoritesClick) {
-                            Icon(Icons.Default.FavoriteBorder, contentDescription = "Favoritos", tint = Color.Black)
+                            Icon(Icons.Default.FavoriteBorder, contentDescription = "Favoritos", tint = MaterialTheme.colorScheme.onSurface)
                         }
                         
-                        IconButton(onClick = onUserListClick) {
-                            Icon(Icons.Default.Person, contentDescription = "Usuarios", tint = Color.Black)
+                        IconButton(onClick = onToggleDarkMode) {
+                            Icon(
+                                if (isDarkMode) Icons.Default.LightMode else Icons.Default.DarkMode,
+                                contentDescription = "Cambiar Tema",
+                                tint = MaterialTheme.colorScheme.onSurface
+                            )
                         }
+                        
+
                         
                         IconButton(onClick = onLogout) {
-                            Icon(Icons.Default.ExitToApp, contentDescription = "Cerrar Sesión", tint = Color.Black)
+                            Icon(Icons.Default.ExitToApp, contentDescription = "Cerrar Sesión", tint = MaterialTheme.colorScheme.onSurface)
                         }
                     }
                     Spacer(modifier = Modifier.height(12.dp))
@@ -232,7 +248,9 @@ fun FeedItem(route: TrekkingRoute, onFavoriteClick: () -> Unit, onClick: () -> U
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
             .clickable { onClick() },
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column {
@@ -254,12 +272,12 @@ fun FeedItem(route: TrekkingRoute, onFavoriteClick: () -> Unit, onClick: () -> U
                         .align(Alignment.TopEnd)
                         .padding(8.dp)
                         .size(36.dp)
-                        .background(Color.White.copy(alpha = 0.9f), CircleShape)
+                        .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.9f), CircleShape)
                 ) {
                     Icon(
                         imageVector = if (route.isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
                         contentDescription = "Favorito",
-                        tint = if (route.isFavorite) Color.Red else Color.Black,
+                        tint = if (route.isFavorite) Color.Red else MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.size(20.dp)
                     )
                 }
@@ -270,18 +288,17 @@ fun FeedItem(route: TrekkingRoute, onFavoriteClick: () -> Unit, onClick: () -> U
                     text = route.title,
                     fontWeight = FontWeight.Bold,
                     fontSize = 15.sp,
-                    color = Color.Black,
+                    color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = route.description,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
                     fontSize = 13.sp,
-                    color = Color.Gray,
-                    lineHeight = 18.sp
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
         }

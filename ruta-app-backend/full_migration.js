@@ -58,8 +58,8 @@ async function migrate() {
     const rutasRes = await localClient.query('SELECT *, ST_AsText(geom) as geom_wkt FROM rutas');
     for (const row of rutasRes.rows) {
       await remoteClient.query(`
-        INSERT INTO rutas (id, title, imageurl, description, height, difficulty, duration, guidename, latitude, longitude, geom, id_empresa)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, ST_GeomFromText($11, 4326), $12)
+        INSERT INTO rutas (id, title, imageurl, description, height, difficulty, duration, guidename, latitude, longitude, geom, id_empresa, recomendaciones)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, ST_GeomFromText($11, 4326), $12, $13)
         ON CONFLICT (id) DO UPDATE SET
           title = EXCLUDED.title,
           imageurl = EXCLUDED.imageurl,
@@ -71,8 +71,9 @@ async function migrate() {
           latitude = EXCLUDED.latitude,
           longitude = EXCLUDED.longitude,
           geom = EXCLUDED.geom,
-          id_empresa = EXCLUDED.id_empresa
-      `, [row.id, row.title, row.imageurl, row.description, row.height, row.difficulty, row.duration, row.guidename, row.latitude, row.longitude, row.geom_wkt, row.id_empresa]);
+          id_empresa = EXCLUDED.id_empresa,
+          recomendaciones = EXCLUDED.recomendaciones
+      `, [row.id, row.title, row.imageurl, row.description, row.height, row.difficulty, row.duration, row.guidename, row.latitude, row.longitude, row.geom_wkt, row.id_empresa, row.recomendaciones]);
     }
     console.log(`✅ Migrated ${rutasRes.rows.length} rutas`);
 

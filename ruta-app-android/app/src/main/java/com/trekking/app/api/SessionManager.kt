@@ -8,9 +8,19 @@ object SessionManager {
     private const val PREF_NAME = "trekking_session"
     private const val KEY_USER = "user_data"
     private const val KEY_TOKEN = "auth_token"
+    private const val KEY_THEME = "dark_mode"
 
     private fun getPrefs(context: Context): SharedPreferences {
         return context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
+    }
+
+    fun isDarkMode(context: Context): Boolean? {
+        val prefs = getPrefs(context)
+        return if (prefs.contains(KEY_THEME)) prefs.getBoolean(KEY_THEME, false) else null
+    }
+
+    fun setDarkMode(context: Context, isDark: Boolean) {
+        getPrefs(context).edit().putBoolean(KEY_THEME, isDark).apply()
     }
 
     fun saveSession(context: Context, user: Usuario, token: String) {
