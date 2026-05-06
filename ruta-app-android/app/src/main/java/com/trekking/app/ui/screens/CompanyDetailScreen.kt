@@ -26,6 +26,9 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.trekking.app.api.Empresa
 import com.trekking.app.api.RetrofitClient
+import android.content.Intent
+import android.net.Uri
+import androidx.compose.ui.platform.LocalContext
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -222,15 +225,27 @@ fun CompanyDetailScreen(
                         Spacer(modifier = Modifier.height(32.dp))
 
                         // Botón de acción principal
+                        val context = LocalContext.current
                         Button(
-                            onClick = { /* Acción de contacto real si se desea */ },
+                            onClick = { 
+                                item.contacto?.let { phone ->
+                                    // Limpiar el número para que solo tenga dígitos (ej: 57310...)
+                                    val digitsOnly = phone.filter { it.isDigit() }
+                                    if (digitsOnly.isNotEmpty()) {
+                                        val message = "Hola ${item.nombre}, me interesa conocer más sobre sus rutas de trekking."
+                                        val uri = Uri.parse("https://wa.me/$digitsOnly?text=${Uri.encode(message)}")
+                                        val intent = Intent(Intent.ACTION_VIEW, uri)
+                                        context.startActivity(intent)
+                                    }
+                                }
+                            },
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(56.dp),
                             shape = RoundedCornerShape(16.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                         ) {
-                            Text("CONTACTAR AHORA", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimary)
+                            Text("CONTACTAR POR WHATSAPP", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimary)
                         }
                         
                         Spacer(modifier = Modifier.height(20.dp))

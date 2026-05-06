@@ -25,6 +25,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import com.trekking.app.api.RetrofitClient
 import com.trekking.app.api.TrekkingRoute
 import com.google.maps.android.compose.*
 import com.google.android.gms.maps.CameraUpdateFactory
