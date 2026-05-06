@@ -10,7 +10,12 @@ import okhttp3.Response
 
 object RetrofitClient {
     // URL de producción en Render
-    private const val BASE_URL = "https://trekking-backend-yxz0.onrender.com"
+    const val BASE_URL = "https://trekking-backend-yxz0.onrender.com"
+
+    fun getFullUrl(path: String?): String? {
+        if (path.isNullOrBlank()) return null
+        return if (path.startsWith("http")) path else "$BASE_URL$path"
+    }
 
     private val authInterceptor = Interceptor { chain ->
         val originalRequest = chain.request()

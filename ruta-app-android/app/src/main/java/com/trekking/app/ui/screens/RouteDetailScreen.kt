@@ -221,11 +221,16 @@ fun RouteDetailScreen(
         ) {
             // Carousel de Imágenes
             val imageList = remember(currentRouteData) {
+                val list = mutableListOf(currentRouteData.imageUrl)
                 if (!currentRouteData.images.isNullOrEmpty()) {
-                    currentRouteData.images
-                } else {
-                    listOf(currentRouteData.imageUrl)
+                    // Evitar duplicados si la imagen principal ya estaba en la lista adicional
+                    currentRouteData.images.forEach { img ->
+                        if (img != currentRouteData.imageUrl) {
+                            list.add(img)
+                        }
+                    }
                 }
+                list
             }
             
             val pagerState = rememberPagerState(pageCount = { imageList.size })
@@ -666,7 +671,7 @@ fun RouteDetailScreen(
             text = {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     AsyncImage(
-                        model = currentRouteData.companyLogo ?: "https://via.placeholder.com/150",
+                        model = RetrofitClient.getFullUrl(currentRouteData.companyLogo) ?: "https://via.placeholder.com/150",
                         contentDescription = "Logo",
                         modifier = Modifier
                             .size(80.dp)

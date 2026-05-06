@@ -114,7 +114,7 @@ fun CompanyDetailScreen(
                             elevation = CardDefaults.cardElevation(4.dp)
                         ) {
                             AsyncImage(
-                                model = item.logoUrl ?: "https://via.placeholder.com/150",
+                                model = RetrofitClient.getFullUrl(item.logoUrl) ?: "https://via.placeholder.com/150",
                                 contentDescription = "Logo ${item.nombre}",
                                 modifier = Modifier.fillMaxSize(),
                                 contentScale = ContentScale.Crop
