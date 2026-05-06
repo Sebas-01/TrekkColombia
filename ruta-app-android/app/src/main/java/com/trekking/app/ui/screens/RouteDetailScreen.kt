@@ -43,8 +43,11 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.Dispatchers
 import java.util.Locale
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
+import kotlinx.coroutines.delay
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalPermissionsApi::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalPermissionsApi::class, androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 fun RouteDetailScreen(
     route: TrekkingRoute?,
@@ -216,15 +219,67 @@ fun RouteDetailScreen(
                 .verticalScroll(scrollState)
                 .background(MaterialTheme.colorScheme.background)
         ) {
-            // Hero Image
-            AsyncImage(
-                model = currentRouteData.imageUrl,
-                contentDescription = currentRouteData.title,
+            // Carousel de Imágenes
+            val imageList = remember(currentRouteData) {
+                if (!currentRouteData.images.isNullOrEmpty()) {
+                    currentRouteData.images
+                } else {
+                    listOf(currentRouteData.imageUrl)
+                }
+            }
+            
+            val pagerState = rememberPagerState(pageCount = { imageList.size })
+            
+            // Auto-scroll logic
+            LaunchedEffect(pagerState.pageCount) {
+                if (pagerState.pageCount > 1) {
+                    while (true) {
+                        delay(4000L) // Cambia cada 4 segundos
+                        val nextPage = (pagerState.currentPage + 1) % pagerState.pageCount
+                        pagerState.animateScrollToPage(nextPage)
+                    }
+                }
+            }
+
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(300.dp),
-                contentScale = ContentScale.Crop
-            )
+                    .height(300.dp)
+            ) {
+                HorizontalPager(
+                    state = pagerState,
+                    modifier = Modifier.fillMaxSize()
+                ) { page ->
+                    AsyncImage(
+                        model = imageList[page],
+                        contentDescription = "${currentRouteData.title} - Imagen ${page + 1}",
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                }
+                
+                // Indicadores de página
+                if (imageList.size > 1) {
+                    Row(
+                        Modifier
+                            .height(50.dp)
+                            .fillMaxWidth()
+                            .align(Alignment.BottomCenter),
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        repeat(imageList.size) { iteration ->
+                            val color = if (pagerState.currentPage == iteration) Color.White else Color.White.copy(alpha = 0.5f)
+                            Box(
+                                modifier = Modifier
+                                    .padding(4.dp)
+                                    .clip(CircleShape)
+                                    .background(color)
+                                    .size(8.dp)
+                            )
+                        }
+                    }
+                }
+            }
 
             Column(modifier = Modifier.padding(20.dp)) {
                 // Header Info
@@ -282,22 +337,36 @@ fun RouteDetailScreen(
                         onClick = { showRecommendations = true },
                         modifier = Modifier.weight(1f),
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFBC02D)),
-                        shape = RoundedCornerShape(12.dp)
+                        shape = RoundedCornerShape(12.dp),
+                        contentPadding = PaddingValues(horizontal = 4.dp, vertical = 8.dp)
                     ) {
-                        Icon(imageVector = Icons.Default.Star, contentDescription = null, tint = Color.White)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Recomendaciones", color = Color.White, fontWeight = FontWeight.Bold)
+                        Icon(imageVector = Icons.Default.Star, contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            "Recomendaciones", 
+                            color = Color.White, 
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 11.sp,
+                            maxLines = 1
+                        )
                     }
                     
                     Button(
                         onClick = { showCompanyPopup = true },
                         modifier = Modifier.weight(1f),
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF3b5998)),
-                        shape = RoundedCornerShape(12.dp)
+                        shape = RoundedCornerShape(12.dp),
+                        contentPadding = PaddingValues(horizontal = 4.dp, vertical = 8.dp)
                     ) {
-                        Icon(imageVector = Icons.Default.Home, contentDescription = null, tint = Color.White)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Operadora", color = Color.White, fontWeight = FontWeight.Bold)
+                        Icon(imageVector = Icons.Default.Home, contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            "Operadora", 
+                            color = Color.White, 
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 11.sp,
+                            maxLines = 1
+                        )
                     }
                 }
 

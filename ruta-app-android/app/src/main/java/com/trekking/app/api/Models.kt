@@ -94,7 +94,8 @@ data class TrekkingRoute(
     @SerializedName("isfavorite") val isFavorite: Boolean = false,
     @SerializedName("recomendaciones") val recomendaciones: String? = null,
     @SerializedName("companylogo") val companyLogo: String? = null,
-    @SerializedName("companydescription") val companyDescription: String? = null
+    @SerializedName("companydescription") val companyDescription: String? = null,
+    @SerializedName("images") val images: List<String>? = emptyList()
 )
 
 data class FavoriteRequest(

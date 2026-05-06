@@ -155,6 +155,26 @@ const initDb = async () => {
       console.log('Columna "recomendaciones" añadida a rutas.');
     }
 
+    if (!routesColumnNames.includes('images')) {
+      await db.query("ALTER TABLE rutas ADD COLUMN images TEXT[]");
+      console.log('Columna "images" añadida a rutas.');
+      
+      // Poblar imágenes aleatorias para rutas existentes
+      const fs = require('fs');
+      const path = require('path');
+      const imagenesDir = path.join(__dirname, 'public', 'imagenes');
+      const files = fs.readdirSync(imagenesDir).filter(f => f.endsWith('.jpg') || f.endsWith('.png') || f.endsWith('.jpeg'));
+      
+      const routesResult = await db.query("SELECT id FROM rutas");
+      for (const route of routesResult.rows) {
+        // Mezclar y tomar 4
+        const shuffled = files.sort(() => 0.5 - Math.random());
+        const selected = shuffled.slice(0, 4).map(f => `https://trekking-backend-yxz0.onrender.com/imagenes/${f}`);
+        await db.query("UPDATE rutas SET images = $1 WHERE id = $2", [selected, route.id]);
+      }
+      console.log('Imágenes de carrusel inicializadas para todas las rutas.');
+    }
+
     // --- Migración: Tabla guias ---
     const guiasExists = await db.query(
       "SELECT to_regclass('public.guias') as exists"
