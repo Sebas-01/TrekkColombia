@@ -7,6 +7,9 @@ interface ApiService {
     @POST("/login")
     suspend fun login(@Body request: LoginRequest): Response<LoginResponse>
 
+    @POST("/recuperar-password")
+    suspend fun recuperarPassword(@Body request: ForgotPasswordRequest): Response<MessageResponse>
+
     @GET("/usuarios")
     suspend fun getUsuarios(): Response<List<Usuario>>
 

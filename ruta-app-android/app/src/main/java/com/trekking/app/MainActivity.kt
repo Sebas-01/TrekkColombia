@@ -8,7 +8,7 @@ import com.trekking.app.api.*
 import com.trekking.app.ui.screens.*
 import com.trekking.app.ui.theme.TrekkingAppTheme
 
-enum class Screen { Login, Feed, ProfileUpdate, RouteDetail, Register, Favorites, RouteList, CompanyDetail }
+enum class Screen { Login, Feed, ProfileUpdate, RouteDetail, Register, Favorites, RouteList, CompanyDetail, ForgotPassword }
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -54,7 +54,8 @@ fun AppNavigation() {
                     currentUser = user
                     currentScreen = Screen.Feed
                 },
-                onRegisterClick = { currentScreen = Screen.Register }
+                onRegisterClick = { currentScreen = Screen.Register },
+                onForgotPasswordClick = { currentScreen = Screen.ForgotPassword }
             )
 
             Screen.Feed -> FeedScreen(
@@ -138,6 +139,13 @@ fun AppNavigation() {
                     onRegisterSuccess = {
                         currentScreen = Screen.Login
                     }
+                )
+            }
+
+            Screen.ForgotPassword -> {
+                androidx.activity.compose.BackHandler { currentScreen = Screen.Login }
+                ForgotPasswordScreen(
+                    onBack = { currentScreen = Screen.Login }
                 )
             }
 

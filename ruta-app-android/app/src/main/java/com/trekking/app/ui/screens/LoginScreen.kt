@@ -34,7 +34,8 @@ import kotlinx.coroutines.launch
 @Composable
 fun LoginScreen(
     onLoginSuccess: (Usuario) -> Unit,
-    onRegisterClick: () -> Unit
+    onRegisterClick: () -> Unit,
+    onForgotPasswordClick: () -> Unit
 ) {
     val context = LocalContext.current
     var email by remember { mutableStateOf("") }
@@ -179,7 +180,17 @@ fun LoginScreen(
                         )
                     }
 
-                    Spacer(modifier = Modifier.height(32.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    TextButton(onClick = onForgotPasswordClick) {
+                        Text(
+                            "¿Olvidaste tu contraseña?", 
+                            color = Color(0xFF192f6a), 
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(24.dp))
 
                     Button(
                         onClick = {

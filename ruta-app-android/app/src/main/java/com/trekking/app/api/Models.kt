@@ -46,6 +46,10 @@ data class MessageResponse(
     val message: String
 )
 
+data class ForgotPasswordRequest(
+    val correo: String
+)
+
 data class Empresa(
     @SerializedName("id") val id: Int,
     @SerializedName("nombre") val nombre: String,

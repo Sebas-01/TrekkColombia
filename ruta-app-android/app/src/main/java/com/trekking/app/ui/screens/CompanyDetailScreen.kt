@@ -93,7 +93,7 @@ fun CompanyDetailScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Detalle de la Operadora", fontWeight = FontWeight.Bold) },
+                title = { Text(empresa?.nombre ?: "Detalle", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Atrás")

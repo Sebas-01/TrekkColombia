@@ -367,7 +367,7 @@ fun RouteDetailScreen(
                         Icon(imageVector = Icons.Default.Home, contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
-                            "Operadora", 
+                            "Acerca de", 
                             color = Color.White, 
                             fontWeight = FontWeight.Bold,
                             fontSize = 11.sp,
@@ -628,6 +628,7 @@ fun RouteDetailScreen(
     }
 
     // --- Ventana Emergente de Recomendaciones ---
+    // --- Ventana Emergente de Recomendaciones ---
     if (showRecommendations) {
         AlertDialog(
             onDismissRequest = { showRecommendations = false },
@@ -635,13 +636,29 @@ fun RouteDetailScreen(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(imageVector = Icons.Default.Info, contentDescription = null, tint = Color(0xFFFBC02D))
                     Spacer(modifier = Modifier.width(10.dp))
-                    Text("Recomendaciones", fontWeight = FontWeight.Bold)
+                    Text("Recomendaciones", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                 }
             },
             text = {
                 Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                    val baseText = currentRouteData.recomendaciones ?: "No hay recomendaciones específicas para esta ruta por ahora."
+                    // Añadimos texto extra para probar el scroll si es necesario
+                    val longText = if (baseText.length < 500) {
+                        baseText + "\n\n" + "--- INFORMACIÓN ADICIONAL PARA PRUEBA DE SCROLL ---\n" +
+                        "1. Llevar hidratación constante (mínimo 2 litros).\n" +
+                        "2. Usar bloqueador solar de alta protección.\n" +
+                        "3. Ropa térmica si la ruta supera los 3000 metros.\n" +
+                        "4. Calzado con buen agarre (suela track).\n" +
+                        "5. Seguir siempre las indicaciones del guía.\n" +
+                        "6. No desviarse de los senderos marcados.\n" +
+                        "7. Respetar la fauna y flora local.\n" +
+                        "8. Llevar snacks energéticos (frutos secos, barras).\n" +
+                        "9. Impermeable ligero siempre a la mano.\n" +
+                        "10. Botiquín personal básico.\n".repeat(5)
+                    } else baseText
+                    
                     Text(
-                        text = currentRouteData.recomendaciones ?: "No hay recomendaciones específicas para esta ruta por ahora.",
+                        text = longText,
                         fontSize = 16.sp,
                         lineHeight = 24.sp,
                         color = MaterialTheme.colorScheme.onSurface
@@ -650,11 +667,11 @@ fun RouteDetailScreen(
             },
             confirmButton = {
                 TextButton(onClick = { showRecommendations = false }) {
-                    Text("Entendido", fontWeight = FontWeight.Bold, color = Color(0xFF3b5998))
+                    Text("Entendido", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                 }
             },
             shape = RoundedCornerShape(20.dp),
-            containerColor = Color.White
+            containerColor = MaterialTheme.colorScheme.surface
         )
     }
 
@@ -664,9 +681,9 @@ fun RouteDetailScreen(
             onDismissRequest = { showCompanyPopup = false },
             title = {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(imageVector = Icons.Default.Home, contentDescription = null, tint = Color(0xFF3b5998))
+                    Icon(imageVector = Icons.Default.Home, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                     Spacer(modifier = Modifier.width(10.dp))
-                    Text("Sobre la Operadora", fontWeight = FontWeight.Bold)
+                    Text("Sobre la Operadora", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                 }
             },
             text = {
@@ -684,7 +701,7 @@ fun RouteDetailScreen(
                         text = currentRouteData.companyName,
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF1A2b4c),
+                        color = MaterialTheme.colorScheme.onSurface,
                         textAlign = TextAlign.Center
                     )
                     Spacer(modifier = Modifier.height(8.dp))
@@ -692,7 +709,7 @@ fun RouteDetailScreen(
                         text = currentRouteData.companyDescription ?: "Esta empresa se dedica a brindar las mejores experiencias de trekking.",
                         fontSize = 15.sp,
                         lineHeight = 22.sp,
-                        color = Color.DarkGray,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center
                     )
                 }
@@ -702,16 +719,16 @@ fun RouteDetailScreen(
                     showCompanyPopup = false
                     currentRouteData.companyId?.let { onCompanyClick(it) } 
                 }) {
-                    Text("VER PERFIL COMPLETO", fontWeight = FontWeight.Bold, color = Color(0xFF3b5998))
+                    Text("VER PERFIL COMPLETO", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showCompanyPopup = false }) {
-                    Text("CERRAR", color = Color.Gray)
+                    Text("CERRAR", color = MaterialTheme.colorScheme.outline)
                 }
             },
             shape = RoundedCornerShape(20.dp),
-            containerColor = Color.White
+            containerColor = MaterialTheme.colorScheme.surface
         )
     }
 }

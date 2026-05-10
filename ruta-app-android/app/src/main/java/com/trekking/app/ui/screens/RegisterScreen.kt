@@ -32,6 +32,8 @@ import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Phone
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -224,8 +226,8 @@ fun RegisterScreen(
                                 leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null, tint = Color(0xFF192f6a)) },
                                 trailingIcon = {
                                     val image = if (passwordVisible)
-                                        androidx.compose.material.icons.filled.Visibility
-                                    else androidx.compose.material.icons.filled.VisibilityOff
+                                        Icons.Default.Visibility
+                                    else Icons.Default.VisibilityOff
 
                                     IconButton(onClick = { passwordVisible = !passwordVisible }) {
                                         Icon(imageVector = image, contentDescription = null, tint = Color(0xFF192f6a))

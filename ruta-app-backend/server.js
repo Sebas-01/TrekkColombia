@@ -300,6 +300,29 @@ app.post('/login', async (req, res) => {
   }
 });
 
+// Recuperar Contraseña (Simulado)
+app.post('/recuperar-password', async (req, res) => {
+  const { correo } = req.body;
+  if (!correo) {
+    return res.status(400).json({ error: 'El correo es obligatorio' });
+  }
+  try {
+    const { rows } = await db.query('SELECT * FROM usuarios WHERE correo = $1', [correo]);
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'No existe una cuenta con ese correo electrónico' });
+    }
+    
+    // Aquí es donde normalmente enviarías el email real.
+    // Por ahora simulamos que se envió correctamente.
+    console.log(`Solicitud de recuperación para: ${correo}. (Simulación de envío de email)`);
+    
+    res.json({ message: 'Se ha enviado un enlace de recuperación a tu correo electrónico' });
+  } catch (err) {
+    console.error('ERROR EN RECUPERAR PASSWORD:', err);
+    res.status(500).json({ error: 'Error al procesar la solicitud' });
+  }
+});
+
 // --- Endpoints de Rutas ---
 
 app.get('/rutas', async (req, res) => {
