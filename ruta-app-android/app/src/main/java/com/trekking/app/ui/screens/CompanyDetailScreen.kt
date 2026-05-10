@@ -316,7 +316,6 @@ fun CompanyDetailPreview() {
             empresa = Empresa(
                 id = 1,
                 nombre = "Trekking Adventures",
-                identificacion = "123456789",
                 logoUrl = null,
                 rnt = "RNT 12345",
                 descripcion = "Una empresa líder en senderismo y aventura en las montañas de Colombia. Ofrecemos las mejores rutas con guías certificados.",

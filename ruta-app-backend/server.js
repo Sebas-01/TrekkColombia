@@ -77,10 +77,7 @@ const initDb = async () => {
     const columns = await db.query("SELECT column_name FROM information_schema.columns WHERE table_name = 'usuarios'");
     const columnNames = columns.rows.map(c => c.column_name);
 
-    if (!columnNames.includes('fecha_creacion')) {
-      await db.query("ALTER TABLE usuarios ADD COLUMN fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP");
-      console.log('Columna "fecha_creacion" añadida.');
-    }
+
 
     // --- Migración de Empresas ---
     const empresasColumns = await db.query("SELECT column_name FROM information_schema.columns WHERE table_name = 'empresas'");

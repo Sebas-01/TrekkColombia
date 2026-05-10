@@ -199,9 +199,7 @@ fun UserListScreenPreview() {
             idUsuario = 1,
             nombre = "Sebastian Admin",
             telefono = "123456",
-            correo = "admin@trekking.com",
-            foto = null,
-            fechaCreacion = "2024-01-01"
+            correo = "admin@trekking.com"
         )
         UserListScreen(
             currentUser = mockUser,

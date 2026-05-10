@@ -316,8 +316,9 @@ fun FeedItem(route: TrekkingRoute, onFavoriteClick: () -> Unit, onClick: () -> U
         }
     }
 }
+
 @Composable
-fun SkeletonFeedItem(index: Int) {
+private fun SkeletonFeedItem(index: Int) {
     val shimmerColors = listOf(
         Color.LightGray.copy(alpha = 0.6f),
         Color.LightGray.copy(alpha = 0.2f),

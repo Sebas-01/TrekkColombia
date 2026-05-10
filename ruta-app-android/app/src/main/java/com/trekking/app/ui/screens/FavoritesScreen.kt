@@ -29,6 +29,8 @@ import androidx.compose.animation.core.*
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -180,7 +182,7 @@ fun FavoritesScreenPreview() {
 }
 
 @Composable
-fun SkeletonFeedItem(index: Int) {
+private fun SkeletonFeedItem(index: Int) {
     val shimmerColors = listOf(
         Color.LightGray.copy(alpha = 0.6f),
         Color.LightGray.copy(alpha = 0.2f),
@@ -248,4 +250,3 @@ fun SkeletonFeedItem(index: Int) {
         }
     }
 }
-
