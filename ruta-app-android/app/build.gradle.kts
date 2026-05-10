@@ -51,6 +51,7 @@ dependencies {
     implementation(libs.androidx.material3)
     implementation(libs.androidx.material.icons.extended)
     implementation(libs.google.material)
+    implementation(libs.androidx.collection)
     
     // Networking
     implementation(libs.retrofit)

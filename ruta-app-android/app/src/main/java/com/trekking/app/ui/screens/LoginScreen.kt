@@ -276,6 +276,10 @@ fun LoginScreen(
 @Composable
 fun LoginScreenPreview() {
     TrekkingAppTheme {
-        LoginScreen(onLoginSuccess = {}, onRegisterClick = {})
+        LoginScreen(
+            onLoginSuccess = {}, 
+            onRegisterClick = {},
+            onForgotPasswordClick = {}
+        )
     }
 }

@@ -30,13 +30,14 @@ import com.trekking.app.api.Empresa
 import com.trekking.app.api.RetrofitClient
 import android.content.Intent
 import android.net.Uri
+import androidx.compose.ui.tooling.preview.Preview
 import com.trekking.app.data.local.AppDatabase
 import com.trekking.app.data.local.toEmpresa
 import com.trekking.app.data.local.toEntity
+import com.trekking.app.ui.theme.TrekkingAppTheme
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CompanyDetailScreen(
     companyId: Int,
@@ -90,6 +91,22 @@ fun CompanyDetailScreen(
         }
     }
 
+    CompanyDetailContent(
+        empresa = empresa,
+        isLoading = isLoading,
+        error = error,
+        onBack = onBack
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun CompanyDetailContent(
+    empresa: Empresa?,
+    isLoading: Boolean,
+    error: String?,
+    onBack: () -> Unit
+) {
     Scaffold(
         topBar = {
             TopAppBar(
@@ -107,6 +124,7 @@ fun CompanyDetailScreen(
             )
         }
     ) { padding ->
+        val context = LocalContext.current
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -120,7 +138,7 @@ fun CompanyDetailScreen(
                 )
             } else if (error != null) {
                 Text(
-                    text = error!!,
+                    text = error,
                     modifier = Modifier.align(Alignment.Center),
                     color = Color.Red
                 )
@@ -138,14 +156,14 @@ fun CompanyDetailScreen(
                             modifier = Modifier
                                 .size(120.dp)
                                 .clip(CircleShape),
-                            elevation = CardDefaults.cardElevation(4.dp)
+                            elevation = CardDefaults.cardElevation(6.dp)
                         ) {
+                            val logoUrl = RetrofitClient.getFullUrl(item.logoUrl)
                             AsyncImage(
-                                model = RetrofitClient.getFullUrl(item.logoUrl) ?: "https://via.placeholder.com/150",
-                                contentDescription = "Logo",
+                                model = logoUrl ?: "https://via.placeholder.com/150",
+                                contentDescription = "Logo de ${item.nombre}",
                                 modifier = Modifier
-                                    .size(100.dp)
-                                    .clip(CircleShape)
+                                    .fillMaxSize()
                                     .background(MaterialTheme.colorScheme.surfaceVariant),
                                 contentScale = ContentScale.Crop
                             )
@@ -287,5 +305,26 @@ fun CompanyDetailScreen(
                 }
             }
         }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun CompanyDetailPreview() {
+    TrekkingAppTheme {
+        CompanyDetailContent(
+            empresa = Empresa(
+                id = 1,
+                nombre = "Trekking Adventures",
+                identificacion = "123456789",
+                logoUrl = null,
+                rnt = "RNT 12345",
+                descripcion = "Una empresa líder en senderismo y aventura en las montañas de Colombia. Ofrecemos las mejores rutas con guías certificados.",
+                contacto = "3001234567"
+            ),
+            isLoading = false,
+            error = null,
+            onBack = {}
+        )
     }
 }

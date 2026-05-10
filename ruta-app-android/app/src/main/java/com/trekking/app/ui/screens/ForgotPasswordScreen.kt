@@ -137,7 +137,7 @@ fun ForgotPasswordScreen(
                 enabled = !isLoading
             ) {
                 if (isLoading) {
-                    CircularProgressIndicator(size = 24.dp, color = Color(0xFF192f6a))
+                    CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color(0xFF192f6a))
                 } else {
                     Text("ENVIAR INSTRUCCIONES", fontWeight = FontWeight.Bold)
                 }
