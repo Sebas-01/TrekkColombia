@@ -16,12 +16,17 @@ object RetrofitClient {
         if (path.isNullOrBlank()) return null
         if (path.startsWith("http")) return path
         
-        // Limpiar el path para que no tenga una barra al inicio si la base ya la tiene, 
-        // o asegurar que haya una barra entre ambos.
-        val cleanPath = if (path.startsWith("/")) path.substring(1) else path
+        // --- PARCHE PARA RENDER ---
+        // Forzamos que 'logos' sea 'LOGOS' porque el servidor de Render es case-sensitive
+        // y actualmente tiene la carpeta en mayúsculas.
+        val normalizedPath = path.replace("logos/", "LOGOS/").replace("logos\\", "LOGOS\\")
+        
+        val cleanPath = if (normalizedPath.startsWith("/")) normalizedPath.substring(1) else normalizedPath
         val cleanBase = if (BASE_URL.endsWith("/")) BASE_URL else "$BASE_URL/"
         
-        return "$cleanBase$cleanPath"
+        val finalUrl = "$cleanBase$cleanPath"
+        android.util.Log.d("RetrofitClient", "URL Generada: $finalUrl")
+        return finalUrl
     }
 
     private val authInterceptor = Interceptor { chain ->
