@@ -6,7 +6,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
-import androidx.compose.foundation.lazy.staggeredgrid.items
+import androidx.compose.foundation.lazy.staggeredgrid.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -44,7 +44,6 @@ import kotlinx.coroutines.Dispatchers
 import androidx.compose.animation.core.*
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.TileMode
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -138,7 +137,10 @@ fun FeedScreen(
 
     val filteredRoutes = remember(searchQuery, routes) {
         if (searchQuery.isBlank()) routes
-        else routes.filter { it.title.contains(searchQuery, ignoreCase = true) || it.description.contains(searchQuery, ignoreCase = true) }
+        else routes.filter { 
+            it.title.contains(searchQuery, ignoreCase = true) || 
+            (it.description?.contains(searchQuery, ignoreCase = true) == true) 
+        }
     }
 
     Scaffold(
@@ -206,8 +208,6 @@ fun FeedScreen(
                             )
                         }
                         
-
-                        
                         IconButton(onClick = onLogout) {
                             Icon(Icons.Default.ExitToApp, contentDescription = "Cerrar Sesión", tint = MaterialTheme.colorScheme.onSurface)
                         }
@@ -241,9 +241,10 @@ fun FeedScreen(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalItemSpacing = 12.dp
             ) {
-                items(filteredRoutes) { route ->
+                itemsIndexed(filteredRoutes) { index, route ->
                     FeedItem(
                         route = route, 
+                        index = index,
                         onFavoriteClick = { toggleFavorite(route) }, 
                         onClick = { onRouteClick(route) }
                     )
@@ -254,7 +255,11 @@ fun FeedScreen(
 }
 
 @Composable
-fun FeedItem(route: TrekkingRoute, onFavoriteClick: () -> Unit, onClick: () -> Unit) {
+fun FeedItem(route: TrekkingRoute, index: Int, onFavoriteClick: () -> Unit, onClick: () -> Unit) {
+    // Patrón de alturas para efecto Pinterest real en 2 columnas
+    val heights = listOf(200.dp, 260.dp, 230.dp, 190.dp)
+    val imageHeight = heights[index % heights.size]
+    
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -272,91 +277,129 @@ fun FeedItem(route: TrekkingRoute, onFavoriteClick: () -> Unit, onClick: () -> U
                     contentDescription = route.title,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(route.height.dp) // Altura variable (Pinterest style)
-                        .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)),
+                        .height(imageHeight),
                     contentScale = ContentScale.Crop
                 )
                 
-                // Botón Favorito Flotante
-                IconButton(
-                    onClick = onFavoriteClick,
+                Surface(
                     modifier = Modifier
-                        .align(Alignment.TopEnd)
                         .padding(8.dp)
-                        .size(36.dp)
-                        .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.9f), CircleShape)
+                        .align(Alignment.TopEnd),
+                    shape = CircleShape,
+                    color = Color.Black.copy(alpha = 0.5f)
                 ) {
-                    Icon(
-                        imageVector = if (route.isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                        contentDescription = "Favorito",
-                        tint = if (route.isFavorite) Color.Red else MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier.size(20.dp)
-                    )
+                    IconButton(
+                        onClick = onFavoriteClick,
+                        modifier = Modifier.size(32.dp)
+                    ) {
+                        Icon(
+                            imageVector = if (route.isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                            contentDescription = "Favorito",
+                            tint = if (route.isFavorite) Color.Red else Color.White,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
                 }
             }
             
             Column(modifier = Modifier.padding(12.dp)) {
                 Text(
                     text = route.title,
+                    style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold,
-                    fontSize = 15.sp,
-                    color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
+                
                 Spacer(modifier = Modifier.height(4.dp))
+                
                 Text(
-                    text = route.description,
-                    fontSize = 13.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 2,
+                    text = route.companyName,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.primary,
+                    maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
+                
+                Spacer(modifier = Modifier.height(8.dp))
+                
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    DifficultyBadge(route.difficulty ?: "Media")
+                    Text(
+                        text = route.duration ?: "--",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
         }
     }
 }
 
 @Composable
-private fun SkeletonFeedItem(index: Int) {
-    val shimmerColors = listOf(
-        Color.LightGray.copy(alpha = 0.6f),
-        Color.LightGray.copy(alpha = 0.2f),
-        Color.LightGray.copy(alpha = 0.6f),
-    )
+private fun DifficultyBadge(difficulty: String) {
+    val color = when (difficulty.lowercase()) {
+        "fácil", "facil" -> Color(0xFF4CAF50)
+        "media" -> Color(0xFFFF9800)
+        "difícil", "dificil" -> Color(0xFFF44336)
+        else -> MaterialTheme.colorScheme.secondary
+    }
+    
+    Surface(
+        color = color.copy(alpha = 0.1f),
+        shape = RoundedCornerShape(4.dp)
+    ) {
+        Text(
+            text = difficulty,
+            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+            style = MaterialTheme.typography.labelSmall,
+            color = color,
+            fontWeight = FontWeight.Bold
+        )
+    }
+}
 
-    val transition = rememberInfiniteTransition(label = "shimmer")
-    val translateAnim = transition.animateFloat(
+@Composable
+private fun SkeletonFeedItem(index: Int) {
+    val heights = listOf(180.dp, 240.dp, 210.dp, 200.dp)
+    val imageHeight = heights[index % heights.size]
+
+    val infiniteTransition = rememberInfiniteTransition(label = "skeleton")
+    val translateAnim by infiniteTransition.animateFloat(
         initialValue = 0f,
         targetValue = 1000f,
         animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 1200, easing = FastOutSlowInEasing),
+            animation = tween(durationMillis = 1200, easing = LinearEasing),
             repeatMode = RepeatMode.Restart
         ),
-        label = "shimmer"
+        label = "skeleton"
     )
 
     val brush = Brush.linearGradient(
-        colors = shimmerColors,
-        start = Offset.Zero,
-        end = Offset(x = translateAnim.value, y = translateAnim.value)
+        colors = listOf(
+            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
+            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f),
+            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
+        ),
+        start = Offset(10f, 10f),
+        end = Offset(translateAnim, translateAnim)
     )
-
-    // Alturas alternas para simular el estilo Pinterest
-    val height = if (index % 2 == 0) 200.dp else 260.dp
 
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp)),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
         Column {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(height)
+                    .height(imageHeight)
                     .background(brush)
             )
             Column(modifier = Modifier.padding(12.dp)) {
@@ -364,24 +407,14 @@ private fun SkeletonFeedItem(index: Int) {
                     modifier = Modifier
                         .fillMaxWidth(0.7f)
                         .height(16.dp)
-                        .clip(RoundedCornerShape(4.dp))
-                        .background(brush)
+                        .background(brush, RoundedCornerShape(4.dp))
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Box(
                     modifier = Modifier
-                        .fillMaxWidth()
+                        .fillMaxWidth(0.4f)
                         .height(12.dp)
-                        .clip(RoundedCornerShape(4.dp))
-                        .background(brush)
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth(0.5f)
-                        .height(12.dp)
-                        .clip(RoundedCornerShape(4.dp))
-                        .background(brush)
+                        .background(brush, RoundedCornerShape(4.dp))
                 )
             }
         }

@@ -592,17 +592,17 @@ app.delete('/usuarios/:id', async (req, res) => {
 
 // Actualizar usuario
 app.put('/usuarios/:id', async (req, res) => {
-  const { nombre, telefono, correo, password, foto } = req.body;
+  const { nombre, telefono, correo, password } = req.body;
   try {
     let updateQuery = 'UPDATE usuarios SET nombre = $1, telefono = $2, correo = $3';
     let params = [nombre, telefono, correo];
 
     if (password) {
       const hashedPassword = await bcrypt.hash(password, 10);
-      updateQuery += ', password = $5 WHERE idusuario = $6';
+      updateQuery += ', password = $4 WHERE idusuario = $5';
       params.push(hashedPassword, req.params.id);
     } else {
-      updateQuery += ' WHERE idusuario = $5';
+      updateQuery += ' WHERE idusuario = $4';
       params.push(req.params.id);
     }
 

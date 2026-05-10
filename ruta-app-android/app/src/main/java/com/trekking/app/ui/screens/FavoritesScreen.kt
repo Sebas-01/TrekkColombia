@@ -5,7 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
-import androidx.compose.foundation.lazy.staggeredgrid.items
+import androidx.compose.foundation.lazy.staggeredgrid.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
@@ -161,9 +161,10 @@ fun FavoritesScreen(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalItemSpacing = 12.dp
             ) {
-                items(favorites) { route ->
+                itemsIndexed(favorites) { index, route ->
                     FeedItem(
                         route = route.copy(isFavorite = true), // Forzamos que se vea como favorito en esta pantalla
+                        index = index,
                         onFavoriteClick = { removeFavorite(route) },
                         onClick = { onRouteClick(route) }
                     )
@@ -206,7 +207,8 @@ private fun SkeletonFeedItem(index: Int) {
         end = Offset(x = translateAnim.value, y = translateAnim.value)
     )
 
-    val height = if (index % 2 == 0) 200.dp else 260.dp
+    val heights = listOf(200.dp, 260.dp, 230.dp, 190.dp)
+    val height = heights[index % heights.size]
 
     Card(
         modifier = Modifier

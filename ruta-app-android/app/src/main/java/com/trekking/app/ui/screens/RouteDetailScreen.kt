@@ -315,9 +315,9 @@ fun RouteDetailScreen(
                     StatCard(
                         icon = Icons.Default.Info,
                         label = "Dificultad",
-                        value = currentRouteData.difficulty,
+                        value = currentRouteData.difficulty ?: "Media",
                         modifier = Modifier.weight(1f),
-                        color = when(currentRouteData.difficulty.lowercase(Locale.ROOT)) {
+                        color = when((currentRouteData.difficulty ?: "media").lowercase(Locale.ROOT)) {
                             "baja" -> Color(0xFF4CAF50)
                             "media" -> Color(0xFFFFC107)
                             else -> Color(0xFFF44336)
@@ -326,7 +326,7 @@ fun RouteDetailScreen(
                     StatCard(
                         icon = Icons.Default.DateRange,
                         label = "Duración",
-                        value = currentRouteData.duration,
+                        value = currentRouteData.duration ?: "N/A",
                         modifier = Modifier.weight(1f),
                         color = Color(0xFF3b5998)
                     )
@@ -387,7 +387,7 @@ fun RouteDetailScreen(
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = currentRouteData.description,
+                    text = currentRouteData.description ?: "No hay descripción disponible.",
                     fontSize = 16.sp,
                     lineHeight = 24.sp,
                     color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.8f)
@@ -427,7 +427,7 @@ fun RouteDetailScreen(
                 Spacer(modifier = Modifier.height(12.dp))
                 
                 val routeLocation = remember(currentRouteData.latitude, currentRouteData.longitude) {
-                    val latLng = LatLng(currentRouteData.latitude, currentRouteData.longitude)
+                    val latLng = LatLng(currentRouteData.latitude ?: 0.0, currentRouteData.longitude ?: 0.0)
                     Log.d("RouteDetail", "Route coordinates: $latLng")
                     latLng
                 }

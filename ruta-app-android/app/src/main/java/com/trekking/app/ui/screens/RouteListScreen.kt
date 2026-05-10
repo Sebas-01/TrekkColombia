@@ -111,7 +111,7 @@ fun AdminRouteItem(route: TrekkingRoute, onClick: () -> Unit) {
                     color = Color(0xFF1E293B)
                 )
                 Text(
-                    text = route.description,
+                    text = route.description ?: "",
                     fontSize = 13.sp,
                     color = Color.Gray,
                     maxLines = 2,
