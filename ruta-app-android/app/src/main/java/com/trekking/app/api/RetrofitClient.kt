@@ -14,7 +14,14 @@ object RetrofitClient {
 
     fun getFullUrl(path: String?): String? {
         if (path.isNullOrBlank()) return null
-        return if (path.startsWith("http")) path else "$BASE_URL$path"
+        if (path.startsWith("http")) return path
+        
+        // Limpiar el path para que no tenga una barra al inicio si la base ya la tiene, 
+        // o asegurar que haya una barra entre ambos.
+        val cleanPath = if (path.startsWith("/")) path.substring(1) else path
+        val cleanBase = if (BASE_URL.endsWith("/")) BASE_URL else "$BASE_URL/"
+        
+        return "$cleanBase$cleanPath"
     }
 
     private val authInterceptor = Interceptor { chain ->

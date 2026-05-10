@@ -298,7 +298,7 @@ fun RouteDetailScreen(
                 Text(
                     text = "por ${currentRouteData.companyName}",
                     fontSize = 16.sp,
-                    color = Color(0xFF3b5998),
+                    color = MaterialTheme.colorScheme.primary,
                     fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.clickable { 
                         currentRouteData.companyId?.let { onCompanyClick(it) } 
@@ -390,7 +390,7 @@ fun RouteDetailScreen(
                     text = currentRouteData.description,
                     fontSize = 16.sp,
                     lineHeight = 24.sp,
-                    color = Color(0xFF334155)
+                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.8f)
                 )
 
                 Spacer(modifier = Modifier.height(32.dp))
@@ -639,12 +639,12 @@ fun RouteDetailScreen(
                 }
             },
             text = {
-                Column {
+                Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
                     Text(
                         text = currentRouteData.recomendaciones ?: "No hay recomendaciones específicas para esta ruta por ahora.",
                         fontSize = 16.sp,
                         lineHeight = 24.sp,
-                        color = Color(0xFF334155)
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                 }
             },

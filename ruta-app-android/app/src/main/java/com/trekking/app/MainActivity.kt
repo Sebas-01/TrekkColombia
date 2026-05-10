@@ -78,58 +78,76 @@ fun AppNavigation() {
                 isDarkMode = isDarkMode,
                 onToggleDarkMode = toggleDarkMode
             )
-            Screen.Favorites -> FavoritesScreen(
-                currentUser = currentUser,
-                onBack = { currentScreen = Screen.Feed },
-                onRouteClick = { route ->
-                    selectedRoute = route
-                    currentScreen = Screen.RouteDetail
-                }
-            )
-
-            Screen.ProfileUpdate -> ProfileUpdateScreen(
-                user = editingUser,
-                onBack = { 
-                    currentScreen = Screen.Feed
-                },
-                onUpdateSuccess = { updatedUser ->
-                    if (currentUser?.idUsuario == updatedUser.idUsuario) {
-                        currentUser = updatedUser
+            Screen.Favorites -> {
+                androidx.activity.compose.BackHandler { currentScreen = Screen.Feed }
+                FavoritesScreen(
+                    currentUser = currentUser,
+                    onBack = { currentScreen = Screen.Feed },
+                    onRouteClick = { route ->
+                        selectedRoute = route
+                        currentScreen = Screen.RouteDetail
                     }
-                    currentScreen = Screen.Feed
-                },
-                isDarkMode = isDarkMode,
-                onToggleDarkMode = toggleDarkMode
-            )
-            Screen.RouteDetail -> RouteDetailScreen(
-                route = selectedRoute,
-                onBack = { 
-                    currentScreen = Screen.Feed
-                },
-                onCompanyClick = { id ->
-                    selectedCompanyId = id
-                    currentScreen = Screen.CompanyDetail
-                }
-            )
-            Screen.RouteList -> RouteListScreen(
-                onBack = { currentScreen = Screen.Feed },
-                onRouteContentClick = { route ->
-                    selectedRoute = route
-                    currentScreen = Screen.RouteDetail
-                }
-            )
+                )
+            }
 
-            Screen.Register -> RegisterScreen(
-                onBack = { currentScreen = Screen.Login },
-                onRegisterSuccess = {
-                    currentScreen = Screen.Login
-                }
-            )
+            Screen.ProfileUpdate -> {
+                androidx.activity.compose.BackHandler { currentScreen = Screen.Feed }
+                ProfileUpdateScreen(
+                    user = editingUser,
+                    onBack = { 
+                        currentScreen = Screen.Feed
+                    },
+                    onUpdateSuccess = { updatedUser ->
+                        if (currentUser?.idUsuario == updatedUser.idUsuario) {
+                            currentUser = updatedUser
+                        }
+                        currentScreen = Screen.Feed
+                    },
+                    isDarkMode = isDarkMode,
+                    onToggleDarkMode = toggleDarkMode
+                )
+            }
+            Screen.RouteDetail -> {
+                androidx.activity.compose.BackHandler { currentScreen = Screen.Feed }
+                RouteDetailScreen(
+                    route = selectedRoute,
+                    onBack = { 
+                        currentScreen = Screen.Feed
+                    },
+                    onCompanyClick = { id ->
+                        selectedCompanyId = id
+                        currentScreen = Screen.CompanyDetail
+                    }
+                )
+            }
+            Screen.RouteList -> {
+                androidx.activity.compose.BackHandler { currentScreen = Screen.Feed }
+                RouteListScreen(
+                    onBack = { currentScreen = Screen.Feed },
+                    onRouteContentClick = { route ->
+                        selectedRoute = route
+                        currentScreen = Screen.RouteDetail
+                    }
+                )
+            }
 
-            Screen.CompanyDetail -> CompanyDetailScreen(
-                companyId = selectedCompanyId ?: 0,
-                onBack = { currentScreen = Screen.RouteDetail }
-            )
+            Screen.Register -> {
+                androidx.activity.compose.BackHandler { currentScreen = Screen.Login }
+                RegisterScreen(
+                    onBack = { currentScreen = Screen.Login },
+                    onRegisterSuccess = {
+                        currentScreen = Screen.Login
+                    }
+                )
+            }
+
+            Screen.CompanyDetail -> {
+                androidx.activity.compose.BackHandler { currentScreen = Screen.RouteDetail }
+                CompanyDetailScreen(
+                    companyId = selectedCompanyId ?: 0,
+                    onBack = { currentScreen = Screen.RouteDetail }
+                )
+            }
         }
     }
 }

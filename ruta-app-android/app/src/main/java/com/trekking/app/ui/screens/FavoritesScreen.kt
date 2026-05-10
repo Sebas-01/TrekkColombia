@@ -87,7 +87,7 @@ fun FavoritesScreen(
             }
         } else if (favorites.isEmpty()) {
             Box(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
-                Text("Aún no tienes rutas favoritas", color = Color.Gray)
+                Text("Aún no tienes rutas favoritas", color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         } else {
             LazyVerticalStaggeredGrid(

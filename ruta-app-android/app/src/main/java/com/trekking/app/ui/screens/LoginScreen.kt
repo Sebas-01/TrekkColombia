@@ -8,6 +8,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -130,13 +132,15 @@ fun LoginScreen(
                                 focusedBorderColor = Color.White,
                                 unfocusedBorderColor = Color.Transparent,
                                 focusedTextColor = Color.Black,
-                                unfocusedTextColor = Color.Black
+                                unfocusedTextColor = Color.Black,
+                                cursorColor = Color.Black
                             )
                         )
                     }
                     
                     Spacer(modifier = Modifier.height(16.dp))
                     
+                    var passwordVisible by remember { mutableStateOf(false) }
                     Column(modifier = Modifier.fillMaxWidth()) {
                         Text(
                             text = "Contraseña",
@@ -150,8 +154,17 @@ fun LoginScreen(
                             onValueChange = { password = it },
                             placeholder = { Text("••••••••", color = Color.Gray.copy(alpha = 0.5f)) },
                             leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null, tint = Color(0xFF192f6a)) },
+                            trailingIcon = {
+                                val image = if (passwordVisible)
+                                    Icons.Default.Visibility
+                                else Icons.Default.VisibilityOff
+
+                                IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                                    Icon(imageVector = image, contentDescription = null, tint = Color(0xFF192f6a))
+                                }
+                            },
                             modifier = Modifier.fillMaxWidth(),
-                            visualTransformation = PasswordVisualTransformation(),
+                            visualTransformation = if (passwordVisible) androidx.compose.ui.text.input.VisualTransformation.None else PasswordVisualTransformation(),
                             shape = RoundedCornerShape(16.dp),
                             singleLine = true,
                             colors = OutlinedTextFieldDefaults.colors(
@@ -160,7 +173,8 @@ fun LoginScreen(
                                 focusedBorderColor = Color.White,
                                 unfocusedBorderColor = Color.Transparent,
                                 focusedTextColor = Color.Black,
-                                unfocusedTextColor = Color.Black
+                                unfocusedTextColor = Color.Black,
+                                cursorColor = Color.Black
                             )
                         )
                     }
@@ -217,9 +231,18 @@ fun LoginScreen(
                         }
                     }
 
-                    errorMessage?.let {
-                        Spacer(modifier = Modifier.height(12.dp))
-                        Text(it, color = Color.Red, fontSize = 14.sp)
+                    // Error Dialog
+                    if (errorMessage != null) {
+                        AlertDialog(
+                            onDismissRequest = { errorMessage = null },
+                            title = { Text("Error") },
+                            text = { Text(errorMessage ?: "") },
+                            confirmButton = {
+                                TextButton(onClick = { errorMessage = null }) {
+                                    Text("Aceptar")
+                                }
+                            }
+                        )
                     }
                 }
             }

@@ -148,7 +148,10 @@ fun RegisterScreen(
                                     focusedContainerColor = Color.White,
                                     unfocusedContainerColor = Color.White,
                                     focusedBorderColor = Color.White,
-                                    unfocusedBorderColor = Color.Transparent
+                                    unfocusedBorderColor = Color.Transparent,
+                                    focusedTextColor = Color.Black,
+                                    unfocusedTextColor = Color.Black,
+                                    cursorColor = Color.Black
                                 )
                             )
                         }
@@ -169,7 +172,10 @@ fun RegisterScreen(
                                     focusedContainerColor = Color.White,
                                     unfocusedContainerColor = Color.White,
                                     focusedBorderColor = Color.White,
-                                    unfocusedBorderColor = Color.Transparent
+                                    unfocusedBorderColor = Color.Transparent,
+                                    focusedTextColor = Color.Black,
+                                    unfocusedTextColor = Color.Black,
+                                    cursorColor = Color.Black
                                 )
                             )
                         }
@@ -180,23 +186,35 @@ fun RegisterScreen(
                             Text("Teléfono", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(start = 4.dp, bottom = 4.dp))
                             OutlinedTextField(
                                 value = telefono,
-                                onValueChange = { telefono = it },
+                                onValueChange = { input ->
+                                    // Permitir solo números y el signo + para formato internacional, max 15 dígitos
+                                    if (input.all { it.isDigit() || it == '+' } && input.length <= 15) {
+                                        telefono = input
+                                    }
+                                },
                                 placeholder = { Text("+57 300...", color = Color.Gray.copy(alpha = 0.5f)) },
                                 leadingIcon = { Icon(Icons.Default.Phone, contentDescription = null, tint = Color(0xFF192f6a)) },
                                 modifier = Modifier.fillMaxWidth(),
+                                keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                                    keyboardType = androidx.compose.ui.text.input.KeyboardType.Phone
+                                ),
                                 shape = RoundedCornerShape(16.dp),
                                 singleLine = true,
                                 colors = OutlinedTextFieldDefaults.colors(
                                     focusedContainerColor = Color.White,
                                     unfocusedContainerColor = Color.White,
                                     focusedBorderColor = Color.White,
-                                    unfocusedBorderColor = Color.Transparent
+                                    unfocusedBorderColor = Color.Transparent,
+                                    focusedTextColor = Color.Black,
+                                    unfocusedTextColor = Color.Black,
+                                    cursorColor = Color.Black
                                 )
                             )
                         }
                         
                         Spacer(modifier = Modifier.height(16.dp))
                         
+                        var passwordVisible by remember { mutableStateOf(false) }
                         Column(modifier = Modifier.fillMaxWidth()) {
                             Text("Contraseña", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(start = 4.dp, bottom = 4.dp))
                             OutlinedTextField(
@@ -204,7 +222,16 @@ fun RegisterScreen(
                                 onValueChange = { password = it },
                                 placeholder = { Text("Mínimo 6 caracteres", color = Color.Gray.copy(alpha = 0.5f)) },
                                 leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null, tint = Color(0xFF192f6a)) },
-                                visualTransformation = PasswordVisualTransformation(),
+                                trailingIcon = {
+                                    val image = if (passwordVisible)
+                                        androidx.compose.material.icons.filled.Visibility
+                                    else androidx.compose.material.icons.filled.VisibilityOff
+
+                                    IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                                        Icon(imageVector = image, contentDescription = null, tint = Color(0xFF192f6a))
+                                    }
+                                },
+                                visualTransformation = if (passwordVisible) androidx.compose.ui.text.input.VisualTransformation.None else PasswordVisualTransformation(),
                                 modifier = Modifier.fillMaxWidth(),
                                 shape = RoundedCornerShape(16.dp),
                                 singleLine = true,
@@ -212,7 +239,10 @@ fun RegisterScreen(
                                     focusedContainerColor = Color.White,
                                     unfocusedContainerColor = Color.White,
                                     focusedBorderColor = Color.White,
-                                    unfocusedBorderColor = Color.Transparent
+                                    unfocusedBorderColor = Color.Transparent,
+                                    focusedTextColor = Color.Black,
+                                    unfocusedTextColor = Color.Black,
+                                    cursorColor = Color.Black
                                 )
                             )
                         }
@@ -222,6 +252,11 @@ fun RegisterScreen(
                         Button(
                             onClick = {
                                 if (nombre.isNotBlank() && correo.isNotBlank() && password.isNotBlank()) {
+                                    if (password.length < 6) {
+                                        errorMessage = "La contraseña debe tener al menos 6 caracteres"
+                                        return@Button
+                                    }
+
                                     val emailPattern = "^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$".toRegex()
                                     if (!emailPattern.matches(correo)) {
                                         errorMessage = "Correo electrónico inválido"
@@ -273,9 +308,17 @@ fun RegisterScreen(
                             }
                         }
 
-                        errorMessage?.let {
-                            Spacer(modifier = Modifier.height(16.dp))
-                            Text(it, color = Color.Red, fontSize = 14.sp, modifier = Modifier.align(Alignment.CenterHorizontally))
+                        if (errorMessage != null) {
+                            AlertDialog(
+                                onDismissRequest = { errorMessage = null },
+                                title = { Text("Error") },
+                                text = { Text(errorMessage ?: "") },
+                                confirmButton = {
+                                    TextButton(onClick = { errorMessage = null }) {
+                                        Text("Aceptar")
+                                    }
+                                }
+                            )
                         }
                     }
                 }

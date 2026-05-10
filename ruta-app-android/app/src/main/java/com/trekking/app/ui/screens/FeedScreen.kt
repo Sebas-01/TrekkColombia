@@ -158,14 +158,14 @@ fun FeedScreen(
                             modifier = Modifier
                                 .size(40.dp)
                                 .clip(CircleShape)
-                                .background(Color(0xFFE9E9E9))
+                                .background(MaterialTheme.colorScheme.surfaceVariant)
                                 .clickable { onProfileClick() },
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
                                 currentUser?.nombre?.take(1)?.uppercase() ?: "U",
                                 fontWeight = FontWeight.Bold,
-                                color = Color.DarkGray
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                         
@@ -181,8 +181,8 @@ fun FeedScreen(
                             leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, modifier = Modifier.size(20.dp)) },
                             shape = RoundedCornerShape(26.dp),
                             colors = OutlinedTextFieldDefaults.colors(
-                                focusedContainerColor = if (isDarkMode) Color(0xFF333333) else Color(0xFFE9E9E9),
-                                unfocusedContainerColor = if (isDarkMode) Color(0xFF333333) else Color(0xFFE9E9E9),
+                                focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                                unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
                                 focusedBorderColor = Color.Transparent,
                                 unfocusedBorderColor = Color.Transparent,
                                 focusedTextColor = MaterialTheme.colorScheme.onSurface,

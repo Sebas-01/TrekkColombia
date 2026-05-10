@@ -21,6 +21,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -157,7 +159,10 @@ fun ProfileUpdateScreen(
                                     focusedContainerColor = Color.White,
                                     unfocusedContainerColor = Color.White,
                                     focusedBorderColor = Color.White,
-                                    unfocusedBorderColor = Color.Transparent
+                                    unfocusedBorderColor = Color.Transparent,
+                                    focusedTextColor = Color.Black,
+                                    unfocusedTextColor = Color.Black,
+                                    cursorColor = Color.Black
                                 )
                             )
                         }
@@ -168,17 +173,26 @@ fun ProfileUpdateScreen(
                             Text("Teléfono", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(start = 4.dp, bottom = 4.dp))
                             OutlinedTextField(
                                 value = telefono,
-                                onValueChange = { telefono = it },
+                                onValueChange = { input ->
+                                    // Permitir solo números y el signo + para formato internacional, max 15 dígitos
+                                    if (input.all { it.isDigit() || it == '+' } && input.length <= 15) {
+                                        telefono = input
+                                    }
+                                },
                                 placeholder = { Text("Ej: +57 300...", color = Color.Gray.copy(alpha = 0.5f)) },
                                 leadingIcon = { Icon(imageVector = Icons.Default.Phone, contentDescription = null, tint = Color(0xFF192f6a)) },
                                 modifier = Modifier.fillMaxWidth(),
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
                                 shape = RoundedCornerShape(16.dp),
                                 singleLine = true,
                                 colors = OutlinedTextFieldDefaults.colors(
                                     focusedContainerColor = Color.White,
                                     unfocusedContainerColor = Color.White,
                                     focusedBorderColor = Color.White,
-                                    unfocusedBorderColor = Color.Transparent
+                                    unfocusedBorderColor = Color.Transparent,
+                                    focusedTextColor = Color.Black,
+                                    unfocusedTextColor = Color.Black,
+                                    cursorColor = Color.Black
                                 )
                             )
                         }
@@ -199,13 +213,17 @@ fun ProfileUpdateScreen(
                                     focusedContainerColor = Color.White,
                                     unfocusedContainerColor = Color.White,
                                     focusedBorderColor = Color.White,
-                                    unfocusedBorderColor = Color.Transparent
+                                    unfocusedBorderColor = Color.Transparent,
+                                    focusedTextColor = Color.Black,
+                                    unfocusedTextColor = Color.Black,
+                                    cursorColor = Color.Black
                                 )
                             )
                         }
                         
                         Spacer(modifier = Modifier.height(16.dp))
                         
+                        var passwordVisible by remember { mutableStateOf(false) }
                         Column(modifier = Modifier.fillMaxWidth()) {
                             Text("Nueva Contraseña (opcional)", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(start = 4.dp, bottom = 4.dp))
                             OutlinedTextField(
@@ -213,7 +231,16 @@ fun ProfileUpdateScreen(
                                 onValueChange = { password = it },
                                 placeholder = { Text("Dejar en blanco para no cambiar", color = Color.Gray.copy(alpha = 0.5f)) },
                                 leadingIcon = { Icon(imageVector = Icons.Default.Lock, contentDescription = null, tint = Color(0xFF192f6a)) },
-                                visualTransformation = PasswordVisualTransformation(),
+                                trailingIcon = {
+                                    val image = if (passwordVisible)
+                                        androidx.compose.material.icons.filled.Visibility
+                                    else androidx.compose.material.icons.filled.VisibilityOff
+
+                                    IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                                        Icon(imageVector = image, contentDescription = null, tint = Color(0xFF192f6a))
+                                    }
+                                },
+                                visualTransformation = if (passwordVisible) androidx.compose.ui.text.input.VisualTransformation.None else PasswordVisualTransformation(),
                                 modifier = Modifier.fillMaxWidth(),
                                 shape = RoundedCornerShape(16.dp),
                                 singleLine = true,
@@ -221,7 +248,10 @@ fun ProfileUpdateScreen(
                                     focusedContainerColor = Color.White,
                                     unfocusedContainerColor = Color.White,
                                     focusedBorderColor = Color.White,
-                                    unfocusedBorderColor = Color.Transparent
+                                    unfocusedBorderColor = Color.Transparent,
+                                    focusedTextColor = Color.Black,
+                                    unfocusedTextColor = Color.Black,
+                                    cursorColor = Color.Black
                                 )
                             )
                         }
@@ -230,6 +260,11 @@ fun ProfileUpdateScreen(
 
                         Button(
                             onClick = {
+                                if (password.isNotEmpty() && password.length < 6) {
+                                    errorMessage = "La nueva contraseña debe tener al menos 6 caracteres"
+                                    return@Button
+                                }
+
                                 scope.launch {
                                     isLoading = true
                                     errorMessage = null
@@ -279,23 +314,29 @@ fun ProfileUpdateScreen(
 
                         Spacer(modifier = Modifier.height(16.dp))
 
-                        errorMessage?.let {
-                            Text(
-                                text = it,
-                                color = Color(0xFFD32F2F),
-                                fontSize = 14.sp,
-                                modifier = Modifier.fillMaxWidth()
+                        if (errorMessage != null) {
+                            AlertDialog(
+                                onDismissRequest = { errorMessage = null },
+                                title = { Text("Error") },
+                                text = { Text(errorMessage ?: "") },
+                                confirmButton = {
+                                    TextButton(onClick = { errorMessage = null }) {
+                                        Text("Aceptar")
+                                    }
+                                }
                             )
-                            Spacer(modifier = Modifier.height(8.dp))
                         }
-                        successMessage?.let {
-                            Text(
-                                text = it,
-                                color = Color(0xFF388E3C),
-                                fontSize = 14.sp,
-                                modifier = Modifier.fillMaxWidth()
+                        if (successMessage != null) {
+                            AlertDialog(
+                                onDismissRequest = { successMessage = null },
+                                title = { Text("¡Éxito!") },
+                                text = { Text(successMessage ?: "") },
+                                confirmButton = {
+                                    TextButton(onClick = { successMessage = null }) {
+                                        Text("Aceptar")
+                                    }
+                                }
                             )
-                            Spacer(modifier = Modifier.height(8.dp))
                         }
                         
                         Spacer(modifier = Modifier.height(16.dp))

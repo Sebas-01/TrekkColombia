@@ -9,6 +9,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Call
+import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material3.*
@@ -19,6 +20,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -28,7 +30,11 @@ import com.trekking.app.api.Empresa
 import com.trekking.app.api.RetrofitClient
 import android.content.Intent
 import android.net.Uri
-import androidx.compose.ui.platform.LocalContext
+import com.trekking.app.data.local.AppDatabase
+import com.trekking.app.data.local.toEmpresa
+import com.trekking.app.data.local.toEntity
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -36,6 +42,8 @@ fun CompanyDetailScreen(
     companyId: Int,
     onBack: () -> Unit
 ) {
+    val context = LocalContext.current
+    val db = remember { AppDatabase.getDatabase(context) }
     var empresa by remember { mutableStateOf<Empresa?>(null) }
     var isLoading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
@@ -52,15 +60,31 @@ fun CompanyDetailScreen(
                 val body = response.body()
                 if (body != null) {
                     empresa = body
+                    // Guardar en local para uso offline posterior
+                    withContext(Dispatchers.IO) {
+                        db.empresaDao().insertEmpresa(body.toEntity())
+                    }
                 } else {
                     error = "La operadora no devolvió datos (Body null)"
                 }
             } else {
-                val errorMsg = if (response.code() == 404) "Operadora no encontrada (ID: $companyId)" else "Error del servidor: ${response.code()}"
-                error = errorMsg
+                // Si falla la red, intentar cargar de local
+                val local = withContext(Dispatchers.IO) { db.empresaDao().getEmpresaById(companyId) }
+                if (local != null) {
+                    empresa = local.toEmpresa()
+                } else {
+                    val errorMsg = if (response.code() == 404) "Operadora no encontrada" else "Error del servidor: ${response.code()}"
+                    error = errorMsg
+                }
             }
         } catch (e: Exception) {
-            error = "Error de conexión: ${e.message ?: "Conexión fallida"}"
+            // Error de conexión - Intentar cargar de local
+            val local = withContext(Dispatchers.IO) { db.empresaDao().getEmpresaById(companyId) }
+            if (local != null) {
+                empresa = local.toEmpresa()
+            } else {
+                error = "Sin conexión y sin datos locales guardados."
+            }
         } finally {
             isLoading = false
         }
@@ -118,8 +142,11 @@ fun CompanyDetailScreen(
                         ) {
                             AsyncImage(
                                 model = RetrofitClient.getFullUrl(item.logoUrl) ?: "https://via.placeholder.com/150",
-                                contentDescription = "Logo ${item.nombre}",
-                                modifier = Modifier.fillMaxSize(),
+                                contentDescription = "Logo",
+                                modifier = Modifier
+                                    .size(100.dp)
+                                    .clip(CircleShape)
+                                    .background(MaterialTheme.colorScheme.surfaceVariant),
                                 contentScale = ContentScale.Crop
                             )
                         }
@@ -176,14 +203,14 @@ fun CompanyDetailScreen(
                                     "Sobre la operadora",
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 16.sp,
-                                    color = Color.Gray
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                                 Spacer(modifier = Modifier.height(8.dp))
                                 Text(
                                     text = item.descripcion ?: "Esta empresa se dedica a brindar las mejores experiencias de trekking en Colombia.",
                                     fontSize = 15.sp,
                                     lineHeight = 22.sp,
-                                    color = Color.DarkGray
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
                                 )
                             }
                         }
@@ -202,7 +229,7 @@ fun CompanyDetailScreen(
                                     "Datos de contacto",
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 16.sp,
-                                    color = Color.Gray
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                                 Spacer(modifier = Modifier.height(12.dp))
                                 
@@ -210,6 +237,14 @@ fun CompanyDetailScreen(
                                     Icon(Icons.Default.Call, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                                     Spacer(modifier = Modifier.width(12.dp))
                                     Text(item.contacto ?: "No disponible", fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
+                                }
+                                
+                                Spacer(modifier = Modifier.height(12.dp))
+
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(Icons.Default.Email, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                    Spacer(modifier = Modifier.width(12.dp))
+                                    Text("contacto@${item.nombre.lowercase().replace(" ", "")}.com", fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
                                 }
                                 
                                 Spacer(modifier = Modifier.height(12.dp))
@@ -225,7 +260,6 @@ fun CompanyDetailScreen(
                         Spacer(modifier = Modifier.height(32.dp))
 
                         // Botón de acción principal
-                        val context = LocalContext.current
                         Button(
                             onClick = { 
                                 item.contacto?.let { phone ->
