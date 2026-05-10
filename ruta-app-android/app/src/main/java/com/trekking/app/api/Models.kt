@@ -6,9 +6,7 @@ data class Usuario(
     @SerializedName("idusuario") val idUsuario: Int,
     val nombre: String,
     val telefono: String?,
-    val correo: String,
-    val foto: String?,
-    @SerializedName("fecha_creacion") val fechaCreacion: String?
+    val correo: String
 )
 
 data class LoginRequest(
@@ -21,25 +19,21 @@ data class LoginResponse(
     @SerializedName("idUsuario") val idUsuario: Int,
     val nombre: String,
     val correo: String?,
-    val telefono: String?,
-    val foto: String?,
-    @SerializedName("fechaCreacion") val fechaCreacion: String?
+    val telefono: String?
 )
 
 data class RegisterRequest(
     val nombre: String,
     val correo: String,
     val telefono: String?,
-    val password: String,
-    val foto: String? = ""
+    val password: String
 )
 
 data class UpdateRequest(
     val nombre: String,
     val correo: String,
     val telefono: String?,
-    val password: String? = null,
-    val foto: String? = ""
+    val password: String? = null
 )
 
 data class MessageResponse(
@@ -53,7 +47,6 @@ data class ForgotPasswordRequest(
 data class Empresa(
     @SerializedName("id") val id: Int,
     @SerializedName("nombre") val nombre: String,
-    @SerializedName("identificacion") val identificacion: String,
     @SerializedName("logo_url") val logoUrl: String? = null,
     @SerializedName("rnt") val rnt: String? = null,
     @SerializedName("descripcion") val descripcion: String? = null,
@@ -66,7 +59,6 @@ data class Guia(
     val cedula: String,
     val telefono: String?,
     val correo: String?,
-    val foto: String?,
     @SerializedName("id_empresa") val idEmpresa: Int?,
     @SerializedName("empresa_nombre") val empresaNombre: String?
 )
@@ -76,7 +68,6 @@ data class GuiaRequest(
     val cedula: String,
     val telefono: String?,
     val correo: String?,
-    val foto: String?,
     @SerializedName("id_empresa") val idEmpresa: Int?
 )
 
@@ -88,10 +79,8 @@ data class TrekkingRoute(
     @SerializedName("height") val height: Int,
     @SerializedName("id_empresa") val companyId: Int?,
     @SerializedName("companyname") val companyName: String,
-    @SerializedName("companyidentification") val companyIdentification: String?,
     @SerializedName("difficulty") val difficulty: String,
     @SerializedName("duration") val duration: String,
-    @SerializedName("guidename") val guideName: String,
     @SerializedName("latitude") val latitude: Double = 0.0,
     @SerializedName("longitude") val longitude: Double = 0.0,
     @SerializedName("geojson") val geoJson: String? = null,

@@ -32,15 +32,12 @@ const initDb = async () => {
       nombre VARCHAR(100) NOT NULL,
       telefono VARCHAR(20),
       correo VARCHAR(100) UNIQUE NOT NULL,
-      password VARCHAR(255) NOT NULL,
-      foto TEXT,
-      fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      password VARCHAR(255) NOT NULL
     );
 
     CREATE TABLE IF NOT EXISTS empresas (
       id SERIAL PRIMARY KEY,
-      nombre VARCHAR(255) NOT NULL,
-      identificacion VARCHAR(50) NOT NULL
+      nombre VARCHAR(255) NOT NULL
     );
 
     CREATE TABLE IF NOT EXISTS rutas (
@@ -52,7 +49,6 @@ const initDb = async () => {
       id_empresa INTEGER REFERENCES empresas(id),
       difficulty VARCHAR(50),
       duration VARCHAR(50),
-      guideName VARCHAR(255),
       latitude DOUBLE PRECISION DEFAULT 0.0,
       longitude DOUBLE PRECISION DEFAULT 0.0,
       geom GEOMETRY(LineString, 4326),
@@ -65,7 +61,6 @@ const initDb = async () => {
       cedula BIGINT NOT NULL,
       telefono VARCHAR(20),
       correo VARCHAR(100),
-      foto TEXT,
       id_empresa INTEGER REFERENCES empresas(id) ON DELETE SET NULL
     );
 
@@ -114,35 +109,34 @@ const initDb = async () => {
       console.log('Columna "id_empresa" añadida a rutas.');
     }
 
-    if (routesColumnNames.includes('companyname')) {
-      // Migrar datos de companyName a la tabla empresas
-      console.log('Migrando nombres de empresas a la nueva tabla...');
-      const distinctCompanies = await db.query("SELECT DISTINCT companyName FROM rutas WHERE companyName IS NOT NULL AND companyName != ''");
+      // Eliminar columnas antiguas si existen
+      if (routesColumnNames.includes('companyname')) {
+        await db.query("ALTER TABLE rutas DROP COLUMN companyName");
+      }
+      if (routesColumnNames.includes('guidename')) {
+        await db.query("ALTER TABLE rutas DROP COLUMN guidename");
+        console.log('Columna "guidename" eliminada.');
+      }
       
-      for (const row of distinctCompanies.rows) {
-        const companyName = row.companyname;
-        // Insertar empresa (usando un NIT ficticio basado en el nombre para la migración)
-        const dummyNit = Math.floor(Math.random() * 900000000) + 100000000;
-        const empResult = await db.query(
-          "INSERT INTO empresas (nombre, identificacion) VALUES ($1, $2) ON CONFLICT DO NOTHING RETURNING id",
-          [companyName, dummyNit]
-        );
-        
-        let empId;
-        if (empResult.rows.length > 0) {
-          empId = empResult.rows[0].id;
-        } else {
-          const existingEmp = await db.query("SELECT id FROM empresas WHERE nombre = $1", [companyName]);
-          empId = existingEmp.rows[0].id;
-        }
-
-        await db.query("UPDATE rutas SET id_empresa = $1 WHERE companyName = $2", [empId, companyName]);
+      const userCols = await db.query("SELECT column_name FROM information_schema.columns WHERE table_name = 'usuarios'");
+      const userColNames = userCols.rows.map(c => c.column_name);
+      if (userColNames.includes('foto')) {
+        await db.query("ALTER TABLE usuarios DROP COLUMN foto");
+      }
+      if (userColNames.includes('fecha_creacion')) {
+        await db.query("ALTER TABLE usuarios DROP COLUMN fecha_creacion");
       }
 
-      // Eliminar la columna antigua
-      await db.query("ALTER TABLE rutas DROP COLUMN companyName");
-      console.log('Columna "companyName" eliminada y datos migrados.');
-    }
+      const guiasCols = await db.query("SELECT column_name FROM information_schema.columns WHERE table_name = 'guias'");
+      if (guiasCols.rows.map(c => c.column_name).includes('foto')) {
+        await db.query("ALTER TABLE guias DROP COLUMN foto");
+      }
+
+      const empCols = await db.query("SELECT column_name FROM information_schema.columns WHERE table_name = 'empresas'");
+      if (empCols.rows.map(c => c.column_name).includes('identificacion')) {
+        // La hacemos opcional primero o la borramos si el usuario está seguro
+        await db.query("ALTER TABLE empresas ALTER COLUMN identificacion DROP NOT NULL");
+      }
 
     // Columna geom en rutas (si no existe)
     if (!routesColumnNames.includes('geom')) {
@@ -189,10 +183,10 @@ const initDb = async () => {
     const empresasCheck = await db.query("SELECT count(*) FROM empresas");
     if (parseInt(empresasCheck.rows[0].count) === 0) {
       const seedEmpresasQuery = `
-      INSERT INTO empresas (nombre, identificacion, descripcion, contacto, logo_url, rnt) VALUES
-      ('Andes Adventure', 900123456, 'Expertos en alta montaña y expediciones en los Andes colombianos.', '+57 310 123 4567', 'https://images.unsplash.com/photo-1599305090748-36656ca77449?q=80&w=200', 'RNT 12345'),
-      ('Trekking Colombia', 900987654, 'Líderes en senderismo ecológico y avistamiento de aves.', '+57 315 987 6543', 'https://images.unsplash.com/photo-1599305090748-36656ca77449?q=80&w=200', 'RNT 67890'),
-      ('Explora Sierra', 900555444, 'Conectamos aventureros con la cultura y naturaleza de la Sierra Nevada.', '+57 320 555 4444', 'https://images.unsplash.com/photo-1599305090748-36656ca77449?q=80&w=200', 'RNT 11223')
+      INSERT INTO empresas (nombre, descripcion, contacto, logo_url, rnt) VALUES
+      ('Andes Adventure', 'Expertos en alta montaña y expediciones en los Andes colombianos.', '+57 310 123 4567', 'https://images.unsplash.com/photo-1599305090748-36656ca77449?q=80&w=200', 'RNT 12345'),
+      ('Trekking Colombia', 'Líderes en senderismo ecológico y avistamiento de aves.', '+57 315 987 6543', 'https://images.unsplash.com/photo-1599305090748-36656ca77449?q=80&w=200', 'RNT 67890'),
+      ('Explora Sierra', 'Conectamos aventureros con la cultura y naturaleza de la Sierra Nevada.', '+57 320 555 4444', 'https://images.unsplash.com/photo-1599305090748-36656ca77449?q=80&w=200', 'RNT 11223')
       ON CONFLICT DO NOTHING;
     `;
     await db.query(seedEmpresasQuery);
@@ -202,11 +196,11 @@ const initDb = async () => {
       seedEmpresas.rows.forEach(e => empMap[e.nombre] = e.id);
 
       const seedRoutesQuery = `
-        INSERT INTO rutas (title, imageUrl, description, height, id_empresa, difficulty, duration, guideName, recomendaciones) VALUES
-        ('Camino del Inca', 'https://picsum.photos/seed/1/400/600', 'Una ruta milenaria que atraviesa los Andes hasta llegar a Machu Picchu.', 300, ${empMap['Andes Adventure']}, 'Alta', '4 días', 'Juan Pérez', 'Llevar botas de trekking impermeables, ropa térmica para la noche y protector solar de alta protección.'),
-        ('Nevado del Cocuy', 'https://picsum.photos/seed/2/400/400', 'Nieve en el trópico colombiano. Siente la magia de los glaciares.', 200, ${empMap['Andes Adventure']}, 'Muy Alta', '2 días', 'María García', 'Es obligatorio el uso de crampones y piolet. Recomendamos aclimatación previa en altitud.'),
-        ('Ciudad Perdida', 'https://picsum.photos/seed/3/400/700', 'Tesoro arqueológico en la Sierra Nevada de Santa Marta.', 350, ${empMap['Explora Sierra']}, 'Media', '5 días', 'Carlos Ruiz', 'Mucha hidratación, repelente de insectos fuerte y calzado con buen agarre para el barro.'),
-        ('Páramo de Santurbán', 'https://picsum.photos/seed/4/400/500', 'Tierra de frailejones y nacimientos de agua cristalina.', 250, ${empMap['Trekking Colombia']}, 'Media', '1 día', 'Elena Blanco', 'Llevar chaqueta rompevientos, guantes y no tocar los frailejones.');
+        INSERT INTO rutas (title, imageUrl, description, height, id_empresa, difficulty, duration, recomendaciones) VALUES
+        ('Camino del Inca', 'https://picsum.photos/seed/1/400/600', 'Una ruta milenaria que atraviesa los Andes hasta llegar a Machu Picchu.', 300, ${empMap['Andes Adventure']}, 'Alta', '4 días', 'Llevar botas de trekking impermeables, ropa térmica para la noche y protector solar de alta protección.'),
+        ('Nevado del Cocuy', 'https://picsum.photos/seed/2/400/400', 'Nieve en el trópico colombiano. Siente la magia de los glaciares.', 200, ${empMap['Andes Adventure']}, 'Muy Alta', '2 días', 'Es obligatorio el uso de crampones y piolet. Recomendamos aclimatación previa en altitud.'),
+        ('Ciudad Perdida', 'https://picsum.photos/seed/3/400/700', 'Tesoro arqueológico en la Sierra Nevada de Santa Marta.', 350, ${empMap['Explora Sierra']}, 'Media', '5 días', 'Mucha hidratación, repelente de insectos fuerte y calzado con buen agarre para el barro.'),
+        ('Páramo de Santurbán', 'https://picsum.photos/seed/4/400/500', 'Tierra de frailejones y nacimientos de agua cristalina.', 250, ${empMap['Trekking Colombia']}, 'Media', '1 día', 'Llevar chaqueta rompevientos, guantes y no tocar los frailejones.');
       `;
       await db.query(seedRoutesQuery);
       console.log('Empresas y Rutas iniciales creadas.');
@@ -231,7 +225,7 @@ initDb();
 // Obtener todos los usuarios
 app.get('/usuarios', async (req, res) => {
   try {
-    const { rows } = await db.query('SELECT idusuario, nombre, telefono, correo, foto FROM usuarios');
+    const { rows } = await db.query('SELECT idusuario, nombre, telefono, correo FROM usuarios');
     res.json(rows);
   } catch (err) {
     console.error(err);
@@ -253,8 +247,8 @@ app.post('/usuarios', async (req, res) => {
   try {
     const hashedPassword = await bcrypt.hash(password, 10);
     const result = await db.query(
-      'INSERT INTO usuarios (nombre, telefono, correo, password, foto) VALUES ($1, $2, $3, $4, $5) RETURNING idusuario',
-      [nombre, telefono, correo, hashedPassword, foto]
+      'INSERT INTO usuarios (nombre, telefono, correo, password) VALUES ($1, $2, $3, $4) RETURNING idusuario',
+      [nombre, telefono, correo, hashedPassword]
     );
     res.status(201).json({ idUsuario: result.rows[0].idusuario });
   } catch (err) {
@@ -290,9 +284,7 @@ app.post('/login', async (req, res) => {
       idUsuario: user.idusuario,
       nombre: user.nombre,
       correo: user.correo,
-      telefono: user.telefono,
-      foto: user.foto,
-      fechaCreacion: user.fecha_creacion
+      telefono: user.telefono
     });
   } catch (err) {
     console.error('ERROR EN LOGIN:', err);
@@ -329,7 +321,7 @@ app.get('/rutas', async (req, res) => {
   try {
     const idUsuario = req.query.idUsuario;
     let query = `
-      SELECT r.*, e.nombre as companyName, e.identificacion as companyIdentification,
+      SELECT r.*, e.nombre as companyName,
       e.logo_url as companyLogo, e.descripcion as companyDescription,
       ST_AsGeoJSON(r.geom) as geojson
       FROM rutas r
@@ -339,7 +331,7 @@ app.get('/rutas', async (req, res) => {
     
     if (idUsuario) {
       query = `
-        SELECT r.*, e.nombre as companyName, e.identificacion as companyIdentification,
+        SELECT r.*, e.nombre as companyName,
         e.logo_url as companyLogo, e.descripcion as companyDescription,
         ST_AsGeoJSON(r.geom) as geojson,
         CASE WHEN f.idruta IS NOT NULL THEN TRUE ELSE FALSE END as isFavorite
@@ -363,7 +355,7 @@ app.post('/rutas', async (req, res) => {
   const { title, gpx, id_empresa } = req.body;
   console.log(`Título: ${title}, ID Empresa: ${id_empresa}, Longitud GPX: ${gpx ? gpx.length : 0}`);
   
-  const { imageUrl, description, height, difficulty, duration, guideName, latitude, longitude, recomendaciones } = req.body;
+  const { imageUrl, description, height, difficulty, duration, latitude, longitude, recomendaciones } = req.body;
   
   try {
     let geomWkt = null;
@@ -384,12 +376,12 @@ app.post('/rutas', async (req, res) => {
     }
 
     const query = `
-      INSERT INTO rutas (title, imageUrl, description, height, id_empresa, difficulty, duration, guideName, latitude, longitude, geom, recomendaciones)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, ${geomWkt ? 'ST_GeomFromText($11, 4326)' : 'NULL'}, ${geomWkt ? '$12' : '$11'})
+      INSERT INTO rutas (title, imageUrl, description, height, id_empresa, difficulty, duration, latitude, longitude, geom, recomendaciones)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, ${geomWkt ? 'ST_GeomFromText($10, 4326)' : 'NULL'}, ${geomWkt ? '$11' : '$10'})
       RETURNING id
     `;
     
-    const params = [title, imageUrl, description, height, id_empresa, difficulty, duration, guideName, latitude, longitude];
+    const params = [title, imageUrl, description, height, id_empresa, difficulty, duration, latitude, longitude];
     if (geomWkt) params.push(geomWkt);
     params.push(recomendaciones);
 
@@ -432,8 +424,8 @@ app.post('/empresas', async (req, res) => {
   const { nombre, identificacion } = req.body;
   try {
     const result = await db.query(
-      'INSERT INTO empresas (nombre, identificacion) VALUES ($1, $2) RETURNING id',
-      [nombre, identificacion]
+      'INSERT INTO empresas (nombre) VALUES ($1) RETURNING id',
+      [nombre]
     );
     res.status(201).json({ id: result.rows[0].id, message: 'Empresa creada correctamente' });
   } catch (err) {
@@ -498,15 +490,15 @@ app.get('/guias/:id', async (req, res) => {
 
 // Crear un guía
 app.post('/guias', async (req, res) => {
-  const { nombre, cedula, telefono, correo, foto, id_empresa } = req.body;
+  const { nombre, cedula, telefono, correo, id_empresa } = req.body;
   if (!nombre || !cedula) {
     return res.status(400).json({ error: 'Los campos nombre y cedula son obligatorios' });
   }
   try {
     const result = await db.query(
-      `INSERT INTO guias (nombre, cedula, telefono, correo, foto, id_empresa)
-       VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
-      [nombre, cedula, telefono, correo, foto, id_empresa]
+      `INSERT INTO guias (nombre, cedula, telefono, correo, id_empresa)
+       VALUES ($1, $2, $3, $4, $5) RETURNING id`,
+      [nombre, cedula, telefono, correo, id_empresa]
     );
     res.status(201).json({ id: result.rows[0].id, message: 'Guía creado correctamente' });
   } catch (err) {
@@ -521,9 +513,9 @@ app.put('/guias/:id', async (req, res) => {
   try {
     const result = await db.query(
       `UPDATE guias
-       SET nombre = $1, cedula = $2, telefono = $3, correo = $4, foto = $5, id_empresa = $6
-       WHERE id = $7 RETURNING id`,
-      [nombre, cedula, telefono, correo, foto, id_empresa, req.params.id]
+       SET nombre = $1, cedula = $2, telefono = $3, correo = $4, id_empresa = $5
+       WHERE id = $6 RETURNING id`,
+      [nombre, cedula, telefono, correo, id_empresa, req.params.id]
     );
     if (result.rows.length === 0) return res.status(404).json({ error: 'Guía no encontrado' });
     res.json({ message: 'Guía actualizado correctamente' });
@@ -550,7 +542,7 @@ app.delete('/guias/:id', async (req, res) => {
 app.get('/favoritos/:idUsuario', async (req, res) => {
   try {
     const query = `
-      SELECT r.*, e.nombre as companyName, e.identificacion as companyIdentification,
+      SELECT r.*, e.nombre as companyName,
       e.logo_url as companyLogo, e.descripcion as companyDescription,
       ST_AsGeoJSON(r.geom) as geojson,
       TRUE as isFavorite
@@ -605,8 +597,8 @@ app.delete('/usuarios/:id', async (req, res) => {
 app.put('/usuarios/:id', async (req, res) => {
   const { nombre, telefono, correo, password, foto } = req.body;
   try {
-    let updateQuery = 'UPDATE usuarios SET nombre = $1, telefono = $2, correo = $3, foto = $4';
-    let params = [nombre, telefono, correo, foto];
+    let updateQuery = 'UPDATE usuarios SET nombre = $1, telefono = $2, correo = $3';
+    let params = [nombre, telefono, correo];
 
     if (password) {
       const hashedPassword = await bcrypt.hash(password, 10);

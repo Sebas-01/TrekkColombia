@@ -300,7 +300,10 @@ fun RegisterScreen(
                             },
                             modifier = Modifier.fillMaxWidth().height(56.dp),
                             shape = RoundedCornerShape(16.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF192f6a)),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color(0xFF192f6a),
+                                contentColor = Color.White
+                            ),
                             enabled = !isLoading
                         ) {
                             if (isLoading) {

@@ -206,9 +206,7 @@ fun LoginScreen(
                                                 idUsuario = loginRes.idUsuario,
                                                 nombre = loginRes.nombre,
                                                 telefono = loginRes.telefono,
-                                                correo = loginRes.correo ?: email,
-                                                foto = loginRes.foto,
-                                                fechaCreacion = loginRes.fechaCreacion
+                                                correo = loginRes.correo ?: email
                                             )
                                             // Guardar sesión persistente
                                             com.trekking.app.api.SessionManager.saveSession(
@@ -233,7 +231,10 @@ fun LoginScreen(
                         },
                         modifier = Modifier.fillMaxWidth().height(56.dp),
                         shape = RoundedCornerShape(16.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF192f6a))
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFF192f6a),
+                            contentColor = Color.White
+                        )
                     ) {
                         if (isLoading) {
                             CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))

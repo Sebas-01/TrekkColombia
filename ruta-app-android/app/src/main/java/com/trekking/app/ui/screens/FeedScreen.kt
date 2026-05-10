@@ -41,6 +41,10 @@ import com.trekking.app.ui.theme.TrekkingAppTheme
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.Dispatchers
+import androidx.compose.animation.core.*
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.TileMode
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -79,10 +83,8 @@ fun FeedScreen(
                             height = it.height,
                             companyId = it.companyId,
                             companyName = it.companyName,
-                            companyIdentification = it.companyIdentification,
                             difficulty = it.difficulty,
                             duration = it.duration,
-                            guideName = it.guideName,
                             latitude = it.latitude,
                             longitude = it.longitude,
                             geoJson = it.geoJson,
@@ -216,8 +218,18 @@ fun FeedScreen(
         }
     ) { padding ->
         if (isLoading) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator(color = Color.Red)
+            LazyVerticalStaggeredGrid(
+                columns = StaggeredGridCells.Fixed(2),
+                modifier = Modifier
+                    .padding(padding)
+                    .fillMaxSize(),
+                contentPadding = PaddingValues(12.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalItemSpacing = 12.dp
+            ) {
+                items(6) { index ->
+                    SkeletonFeedItem(index)
+                }
             }
         } else {
             LazyVerticalStaggeredGrid(
@@ -299,6 +311,76 @@ fun FeedItem(route: TrekkingRoute, onFavoriteClick: () -> Unit, onClick: () -> U
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
+                )
+            }
+        }
+    }
+}
+@Composable
+fun SkeletonFeedItem(index: Int) {
+    val shimmerColors = listOf(
+        Color.LightGray.copy(alpha = 0.6f),
+        Color.LightGray.copy(alpha = 0.2f),
+        Color.LightGray.copy(alpha = 0.6f),
+    )
+
+    val transition = rememberInfiniteTransition(label = "shimmer")
+    val translateAnim = transition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1000f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 1200, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "shimmer"
+    )
+
+    val brush = Brush.linearGradient(
+        colors = shimmerColors,
+        start = Offset.Zero,
+        end = Offset(x = translateAnim.value, y = translateAnim.value)
+    )
+
+    // Alturas alternas para simular el estilo Pinterest
+    val height = if (index % 2 == 0) 200.dp else 260.dp
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp)),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+    ) {
+        Column {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(height)
+                    .background(brush)
+            )
+            Column(modifier = Modifier.padding(12.dp)) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth(0.7f)
+                        .height(16.dp)
+                        .clip(RoundedCornerShape(4.dp))
+                        .background(brush)
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(12.dp)
+                        .clip(RoundedCornerShape(4.dp))
+                        .background(brush)
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth(0.5f)
+                        .height(12.dp)
+                        .clip(RoundedCornerShape(4.dp))
+                        .background(brush)
                 )
             }
         }

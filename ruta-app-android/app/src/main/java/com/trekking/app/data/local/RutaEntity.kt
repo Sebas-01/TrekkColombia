@@ -12,10 +12,8 @@ data class RutaEntity(
     val height: Int,
     val companyId: Int?,
     val companyName: String,
-    val companyIdentification: String?,
     val difficulty: String,
     val duration: String,
-    val guideName: String,
     val latitude: Double,
     val longitude: Double,
     val geoJson: String?,
@@ -34,16 +32,15 @@ fun RutaEntity.toTrekkingRoute(): com.trekking.app.api.TrekkingRoute {
         height = this.height,
         companyId = this.companyId, 
         companyName = this.companyName,
-        companyIdentification = this.companyIdentification,
         difficulty = this.difficulty,
         duration = this.duration,
-        guideName = this.guideName,
         latitude = this.latitude,
         longitude = this.longitude,
         geoJson = this.geoJson,
         isFavorite = this.isFavorite,
         recomendaciones = this.recomendaciones,
         companyLogo = this.companyLogo,
-        companyDescription = this.companyDescription
+        companyDescription = this.companyDescription,
+        images = emptyList() // No soportamos lista de imágenes en caché local por ahora sin TypeConverter
     )
 }

@@ -276,8 +276,7 @@ fun ProfileUpdateScreen(
                                             nombre = nombre,
                                             correo = email,
                                             telefono = telefono.ifEmpty { null },
-                                            password = if (password.isEmpty()) null else password,
-                                            foto = user.foto
+                                            password = if (password.isEmpty()) null else password
                                         )
                                         val response = RetrofitClient.instance.updateUsuario(user.idUsuario, request)
                                         if (response.isSuccessful) {
@@ -287,9 +286,7 @@ fun ProfileUpdateScreen(
                                                     user.idUsuario,
                                                     nombre,
                                                     telefono.ifEmpty { null },
-                                                    email,
-                                                    user.foto,
-                                                    user.fechaCreacion
+                                                    email
                                                 )
                                             )
                                         } else {
@@ -304,7 +301,10 @@ fun ProfileUpdateScreen(
                             },
                             modifier = Modifier.fillMaxWidth().height(56.dp),
                             shape = RoundedCornerShape(16.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF192f6a)),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color(0xFF192f6a),
+                                contentColor = Color.White
+                            ),
                             enabled = !isLoading
                         ) {
                             if (isLoading) {

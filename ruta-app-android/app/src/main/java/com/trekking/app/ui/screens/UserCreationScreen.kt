@@ -137,7 +137,10 @@ fun UserCreationScreen(
                         },
                         modifier = Modifier.fillMaxWidth().height(56.dp),
                         shape = RoundedCornerShape(16.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF3b5998)),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFF3b5998),
+                            contentColor = Color.White
+                        ),
                         enabled = !isLoading
                     ) {
                         if (isLoading) CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
