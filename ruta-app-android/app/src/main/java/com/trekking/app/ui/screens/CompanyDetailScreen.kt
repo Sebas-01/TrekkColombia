@@ -51,7 +51,7 @@ fun CompanyDetailScreen(
 
     LaunchedEffect(companyId) {
         if (companyId <= 0) {
-            error = "ID de operadora no válido ($companyId). Intenta recargar el feed."
+            error = "ID de empresa no válido ($companyId). Intenta recargar el feed."
             isLoading = false
             return@LaunchedEffect
         }
@@ -66,7 +66,7 @@ fun CompanyDetailScreen(
                         db.empresaDao().insertEmpresa(body.toEntity())
                     }
                 } else {
-                    error = "La operadora no devolvió datos (Body null)"
+                    error = "La empresa no devolvió datos (Body null)"
                 }
             } else {
                 // Si falla la red, intentar cargar de local
@@ -74,7 +74,7 @@ fun CompanyDetailScreen(
                 if (local != null) {
                     empresa = local.toEmpresa()
                 } else {
-                    val errorMsg = if (response.code() == 404) "Operadora no encontrada" else "Error del servidor: ${response.code()}"
+                    val errorMsg = if (response.code() == 404) "Empresa no encontrada" else "Error del servidor: ${response.code()}"
                     error = errorMsg
                 }
             }
@@ -221,7 +221,7 @@ fun CompanyDetailContent(
                         ) {
                             Column(modifier = Modifier.padding(20.dp)) {
                                 Text(
-                                    "Sobre la operadora",
+                                    "Sobre la empresa",
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 16.sp,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant

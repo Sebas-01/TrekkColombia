@@ -1,6 +1,7 @@
 package com.trekking.app.ui.screens
 
 import android.util.Log
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -8,6 +9,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.ui.res.painterResource
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -103,7 +105,12 @@ fun RegisterScreen(
                         .background(color = Color.White.copy(alpha = 0.9f)),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text("T", fontSize = 36.sp, fontWeight = FontWeight.Black, color = Color(0xFF192f6a))
+                    Image(
+                        painter = painterResource(id = com.trekking.app.R.drawable.trekk_colombia),
+                        contentDescription = "Logo Trekk Colombia",
+                        modifier = Modifier.fillMaxSize().padding(10.dp),
+                        contentScale = ContentScale.Fit
+                    )
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
