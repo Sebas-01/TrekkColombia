@@ -185,7 +185,7 @@ fun LoginScreen(
                     TextButton(onClick = onForgotPasswordClick) {
                         Text(
                             "¿Olvidaste tu contraseña?", 
-                            color = Color(0xFF192f6a), 
+                            color = Color.White, 
                             fontWeight = FontWeight.SemiBold
                         )
                     }

@@ -7,7 +7,8 @@ const mapping = {
   "TrekColombia Adventures": "trekkColombia-adventure-LOGO.png",
   "Sierra Treks": "SierraTreks-LOGO.png",
   "Páramo Tours": "paramoTours-LOGO.png",
-  "Inca Trails Ltd.": "InkaTrails-LOGO.png"
+  "Inca Trails Ltd.": "InkaTrails-LOGO.png",
+  "Trekking Adventures": "TrekkAdvendure-LOGO.png"
 };
 
 const baseUrl = "https://trekking-backend-yxz0.onrender.com/logos/";

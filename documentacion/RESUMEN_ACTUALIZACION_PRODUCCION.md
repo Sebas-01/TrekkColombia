@@ -39,6 +39,14 @@ Se implementó una arquitectura de caché local para garantizar que la app sea �
 - **Backend:**
   - Configurado para despliegue en subcarpeta (`Root Directory`) y conexión mediante pooling a Supabase.
 
+## 5. Estabilización y Simplificación (Mayo 2026)
+Para asegurar la fiabilidad de la aplicación en producción, se realizaron las siguientes mejoras críticas:
+- **Evolución de DB Local (Room v2):** Se incrementó la versión de la base de datos para forzar una re-inicialización limpia, resolviendo conflictos de esquema previos.
+- **Simplificación del Modelo de Datos:** Se eliminó el campo `rol` y otros metadatos redundantes tanto en el Backend (Supabase) como en el Frontend, optimizando la carga de datos.
+- **Robustez con Null-Safety:** Refactorización integral de los modelos en Kotlin para manejar valores nulos. Esto evita cierres inesperados si el servidor devuelve datos incompletos.
+- **Optimización de Logos:** Implementación de validaciones para URLs de logos de empresas, garantizando que se muestren correctamente o usen un placeholder seguro.
+
 ---
 
-**Estado Actual:** La aplicación es ahora independiente, segura y capaz de funcionar en entornos de baja conectividad. ¡Lista para generar la primera APK de prueba!
+**Estado Actual:** La aplicación ha alcanzado un nivel superior de estabilidad. Con la base de datos local actualizada y un manejo de errores más robusto, el sistema es resiliente a fallos de red y cambios en la API. ¡El APK es ahora más ligero y confiable!
+

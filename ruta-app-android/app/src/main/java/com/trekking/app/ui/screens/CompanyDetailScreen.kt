@@ -144,6 +144,9 @@ fun CompanyDetailContent(
                 )
             } else {
                 empresa?.let { item ->
+                    val contactParts = item.contacto?.split("|")
+                    val phoneText = contactParts?.getOrNull(0)?.trim()?.takeIf { it.isNotEmpty() }
+                    val emailText = contactParts?.getOrNull(1)?.trim()?.takeIf { it.isNotEmpty() }
                     Column(
                         modifier = Modifier
                             .fillMaxSize()
@@ -254,7 +257,7 @@ fun CompanyDetailContent(
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Icon(Icons.Default.Call, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                                     Spacer(modifier = Modifier.width(12.dp))
-                                    Text(item.contacto ?: "No disponible", fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
+                                    Text(phoneText ?: "No disponible", fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
                                 }
                                 
                                 Spacer(modifier = Modifier.height(12.dp))
@@ -262,7 +265,7 @@ fun CompanyDetailContent(
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Icon(Icons.Default.Email, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                                     Spacer(modifier = Modifier.width(12.dp))
-                                    Text("contacto@${item.nombre.lowercase().replace(" ", "")}.com", fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
+                                    Text(emailText ?: "contacto@${item.nombre.lowercase().replace(" ", "")}.com", fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
                                 }
                                 
                                 Spacer(modifier = Modifier.height(12.dp))
@@ -280,7 +283,7 @@ fun CompanyDetailContent(
                         // Botón de acción principal
                         Button(
                             onClick = { 
-                                item.contacto?.let { phone ->
+                                phoneText?.let { phone ->
                                     // Limpiar el número para que solo tenga dígitos (ej: 57310...)
                                     val digitsOnly = phone.filter { it.isDigit() }
                                     if (digitsOnly.isNotEmpty()) {
